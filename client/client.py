@@ -18,6 +18,29 @@ from logging.handlers import SysLogHandler
 VERSION = '0.1a'
 
 
+def main():
+    """Main method. Runs on application execution"""
+    # Initialization
+    args = init_args()
+    config = init_config(args.config_file)
+    logger = init_logging(location=config['main']['log_location'],
+                          level=parse_log_level(config['main']['log_level']))
+
+    logger.info("DeltaSherlock Version %s", VERSION)
+    logger.debug("Logger initialized: %s yielded %s with level %i",
+                 config['main']['log_location'], str(logger),
+                 logger.getEffectiveLevel())
+    logger.debug("Command line arguments loaded: %s", str(args))
+    logger.debug("Config file loaded: %s yielded %s", args.config_file, str(config))
+
+    if args.daemon:
+        #Exceute the central loop
+        interval = config['daemon'].getint('interval')
+        logger.debug("Entering daemon mode loop with interval %i", interval)
+    else:
+        #Perform one check, then exit
+        logger.debug("Daemon mode disabled. Running once then exiting")
+
 def init_args():
     """Process command line arguments"""
     parser = argparse.ArgumentParser(description="DeltaSherlock Client software.")
@@ -61,28 +84,21 @@ def init_logging(location, level):
         logging.getLogger().disabled = True
     elif location is "syslog":
         # Log to Syslog
-        syslog = SysLogHandler(address='/dev/log')
         if sys.platform is 'darwin':
             # Hack for macOS
             syslog = SysLogHandler(address='/var/run/syslog')
+        else:
+            syslog = SysLogHandler(address='/dev/log')
         logging.basicConfig(level=level, handlers=[syslog])
+    elif location is "stdout":
+        # Log to standard output
+        logging.basicConfig(level=level)
     else:
         # Log to specified file
         logging.basicConfig(level=level, filename=location)
 
     logger = logging.getLogger(__name__)
-    logger.info("DeltaSherlock Version %s", VERSION)
-    logger.debug("Logger initialized: %s", str(logger))
     return logger
-
-
-def main():
-    """Main method. Runs on application execution"""
-    # Initialization
-    args = init_args()
-    config = init_config(args.config_file)
-    logger = init_logging(location=config['main']['log_location'],
-                          level=parse_log_level(config['main']['log_level']))
 
 
 # Standard boilerplate to call the main() function to begin the program.
