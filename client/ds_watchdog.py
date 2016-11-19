@@ -3,19 +3,23 @@
 DeltaSherlock client scanning module. Contains methods for analyzing the
 filesystem and creating changesets.
 """
-
+# pylint: disable=C0326, R0913
 import time
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
-from ..common.changesets import Changeset
+from deltasherlock.common.changesets import Changeset
+
 
 class DeltaSherlockEventHandler(PatternMatchingEventHandler):
     """
     Default handler for filesystem events. Called on each file creation,
     modification, deletion, and move.
     """
-    def __init__(self, changeset, patterns=None, ignore_patterns=None, ignore_directories=True, case_sensitive=False):
-        super(DeltaSherlockEventHandler, self).__init__(patterns, ignore_patterns, ignore_directories, case_sensitive)
+
+    def __init__(self, changeset, patterns=None, ignore_patterns=None,
+                 ignore_directories=True, case_sensitive=False):
+        super(DeltaSherlockEventHandler, self).__init__(
+            patterns, ignore_patterns, ignore_directories, case_sensitive)
         self.current_changeset = changeset
 
     def on_created(self, event):
@@ -45,14 +49,24 @@ class DeltaSherlockEventHandler(PatternMatchingEventHandler):
         old_changeset.close(time.time())
         return old_changeset
 
+
 class DeltaSherlockWatchdog(object):
-    def __init__(self, path: str, patterns: str, ignore_patterns: bool):
+    """
+    Manages the watchdog that monitors the filesystem for changes
+    """
+
+    def __init__(self, paths: list, patterns: str, ignore_patterns: bool):
         # Create changeset infrastructure
         self.__changesets = []
 
         self.__observer = Observer()
-        self.__handler = DeltaSherlockEventHandler(Changeset(time.time()), patterns=patterns, ignore_patterns=ignore_patterns, ignore_directories=True, case_sensitive=False)
-        self.__observer.schedule(self.__handler, path, recursive=True)
+        self.__handler = DeltaSherlockEventHandler(Changeset(time.time()),
+                                                   patterns=patterns,
+                                                   ignore_patterns=ignore_patterns,
+                                                   ignore_directories=True,
+                                                   case_sensitive=False)
+        for path in paths:
+            self.__observer.schedule(self.__handler, path, recursive=True)
         self.__observer.start()
         return
 
@@ -79,7 +93,7 @@ class DeltaSherlockWatchdog(object):
         sum_changeset = self.__changesets[first_index]
 
         if last_index is not None:
-            for changeset in self.__changesets[first_index+1:last_index]:
+            for changeset in self.__changesets[first_index + 1:last_index]:
                 sum_changeset += changeset
 
         return sum_changeset

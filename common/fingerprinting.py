@@ -1,14 +1,14 @@
 # DeltaSherlock. See README.md for usage. See LICENSE for MIT/X11 license info.
 # pylint: disable=W0201,W1401,R0903
 """
-DeltaSherlock client fingerprinting module. Contains methods for generating a
+DeltaSherlock fingerprinting module. Contains methods for generating a
 filesystem fingerprint based on a changeset
 """
 from math import sqrt
 from enum import Enum, unique
 from gensim.models import Word2Vec
 import numpy as np
-from ..common.changesets import Changeset
+from deltasherlock.common.changesets import Changeset
 
 
 @unique
@@ -87,7 +87,8 @@ class Fingerprint(np.ndarray):
 
 
 def changeset_to_fingerprint(changeset: Changeset, method: FingerprintingMethod,
-                             w2v_dictionary: Word2Vec=None) -> Fingerprint:
+                             filetree_dictionary: Word2Vec=None,
+                             neighbor_dictionary: Word2Vec=None) -> Fingerprint:
     """
     Primary method of this module. Creates a numerical fingerprint vector
     representation of a Changeset using the specified method. This should always
@@ -105,9 +106,6 @@ def changeset_to_fingerprint(changeset: Changeset, method: FingerprintingMethod,
     if method is FingerprintingMethod.undefined:
         raise ValueError(
             "Cannot create a fingerprint with an undefined creation method")
-    if method.value > 1 and w2v_dictionary is None:
-        raise ValueError(
-            "Cannot create a non-histogram fingerprint without a w2v dictionary")
 
     # Start by fetching the file basenames from the changeset
     basenames = changeset.get_basenames()
@@ -122,13 +120,17 @@ def changeset_to_fingerprint(changeset: Changeset, method: FingerprintingMethod,
     if (method is FingerprintingMethod.filetree
             or method is FingerprintingMethod.histofiletree
             or method is FingerprintingMethod.combined):
-        result_fingerprint += __filetree_fingerprint(basenames, w2v_dictionary)
+        if filetree_dictionary is None:
+            raise ValueError("Missing filetree w2v dictionary")
+        result_fingerprint += __filetree_fingerprint(basenames, filetree_dictionary)
 
     # Then the neighbor fingerprint
     if (method is FingerprintingMethod.neighbor
             or method is FingerprintingMethod.histoneighbor
             or method is FingerprintingMethod.combined):
-        result_fingerprint += __neighbor_fingerprint(basenames, w2v_dictionary)
+        if neighbor_dictionary is None:
+            raise ValueError("Missing neighbor w2v dictionary")
+        result_fingerprint += __neighbor_fingerprint(basenames, neighbor_dictionary)
 
     # Then add the labels
     result_fingerprint.labels = changeset.labels
@@ -159,11 +161,11 @@ def __histogram_fingerprint(basenames: list, num_bins: int=200) -> Fingerprint:
     min_bin = 200
     max_bin = 2000
     bin_size = int((max_bin - min_bin) / (int(num_bins) - 1))
-    ybin = ybin + list(range(min_bin, max_bin, bin_size))
+    ybin = ybin + list(range(min_bin, max_bin - bin_size, bin_size))
     ybin.append(10000)
     if ele_num is 0:
         ele_num = 1
-    raw_histogram = np.histogram(ascii_sum_vector, ybin)[0]
+    raw_histogram = np.histogram(ascii_sum_vector, bins = ybin)[0]
     normalized_histogram = raw_histogram * 1.0 / ele_num   # Normalized hist
     return Fingerprint(normalized_histogram, method=FingerprintingMethod.histogram)
 

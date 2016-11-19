@@ -1,15 +1,18 @@
 # DeltaSherlock. See README.md for usage. See LICENSE for MIT/X11 license info.
+# pylint: disable=W0141
 """
 DeltaSherlock changeset types
 """
 from os import listdir
-from os.path import dirname,basename,isfile
+from os.path import dirname, basename, isfile
+from itertools import chain
+
 
 class ChangesetRecord(object):
     """
     Container for an filesystem change record
     """
-    def __init__(self, filename: str, mtime: int, neighbors: str = None):
+    def __init__(self, filename: str, mtime: int, neighbors: str = list()):
         self.filename = filename
         self.mtime = mtime
         self.neighbors = neighbors
@@ -27,14 +30,27 @@ class ChangesetRecord(object):
         Return the sentence this record represents in the form of a list of
         words (neighbor)
         """
-        return [basename(self.filename)]+self.neighbors
+        return [basename(self.filename)] + self.neighbors
 
-    def add_neighbor(self, filename: str):
+    # def add_neighbor(self, filename: str):
+    #     """
+    #     Add a record for a file that coexists inside the same directory as this
+    #     record's file. Filename should not include path
+    #     """
+    #     self.neighbors.append(filename)
+    #     return
+
+    def find_neighbors(self):
         """
-        Add a record for a file that coexists inside the same directory as this
-        record's file. Filename should not include path
+        Get all of the "neighbors" of this file (eg. files that also exist in
+        the same directory) and save the results in the list
         """
-        self.neighbors.append(filename)
+        try:
+            excluded_entries = [basename(self.filename), ".", ".."]
+            files = [f for f in listdir(dirname(self.filename)) if isfile(f)]
+            self.neighbors = list(set(files) - set(excluded_entries))
+        except:
+            raise IOError("Neighors could not be obtained")
         return
 
     def basename(self) -> str:
@@ -44,13 +60,24 @@ class ChangesetRecord(object):
         return basename(self.filename)
 
     def __lt__(self, other):
+        """
+        Allows comparison by mtime
+        """
         return self.mtime < other.mtime
+
+    def __gt__(self, other):
+        """
+        Allows comparison by mtime
+        """
+        return self.mtime > other.mtime
+
 
 class Changeset(object):
     """
     Represents all filesystem changes during a certain interval (between its
     open_time and close_time)
     """
+
     def __init__(self, open_time: int):
         # Define the interval that the changeset covers
         # (or at least the start of it)
@@ -66,21 +93,46 @@ class Changeset(object):
         return
 
     def add_creation_record(self, filename: str, mtime: int):
-        self.creations.append(ChangesetRecord(filename, mtime, self.__get_neighbors(filename)))
+        if not self.open:
+            raise ValueError("Cannot modify closed Changeset")
+
+        self.creations.append(ChangesetRecord(filename, mtime))
         return
 
     def add_modification_record(self, filename: str, mtime: int):
-        self.modifications.append(ChangesetRecord(filename, mtime, self.__get_neighbors(filename)))
+        if not self.open:
+            raise ValueError("Cannot modify closed Changeset")
+
+        self.modifications.append(ChangesetRecord(filename, mtime))
         return
 
     def add_deletion_record(self, filename: str, mtime: int):
-        self.deletions.append(ChangesetRecord(filename, mtime, self.__get_neighbors(filename)))
+        if not self.open:
+            raise ValueError("Cannot modify closed Changeset")
+
+        self.deletions.append(ChangesetRecord(filename, mtime))
         return
 
     def close(self, close_time: int):
         """
-        Close changeset, indicating that no further changes should be recorded
+        Close changeset, indicating that no further changes should be recorded.
+        Then balance the records lists so that temporary files that were created
+        and deleted during the interval are not considered "created"
         """
+        # First, balance and sort our records
+        self.__balance()
+        self.__sort()
+
+        #Now that everything is balanced, find the neighbors of each changeset record
+        for record in chain(self.creations, self.modifications, self.deletions):
+            try:
+                record.find_neighbors()
+            except IOError:
+                # File or containing directory no longer exists
+                #TODO Log this? Probably can't do much else about this
+                pass
+
+        #And finally, set the close markers
         self.close_time = close_time
         self.open = False
         return
@@ -161,24 +213,27 @@ class Changeset(object):
 
         :returns: the predicted quantity of apps
         """
-        #First, figure out the bounds of our histogram
-        self.sort()
+        if self.open:
+            raise ValueError("Cannot predict quatity on an open changeset")
+
+        # First, figure out the bounds of our histogram
+        self.__sort()
         minimum = float(self.creations[0].mtime)
         maximum = float(self.creations[-1].mtime)
         interval = int(maximum - minimum) + 1
 
-        #Then, try to create the empty histogram
+        # Then, try to create the empty histogram
         try:
             fileHistogram = [[] for i in range(0, interval, 1)]
         except OverflowError:
             print("Overly big histogram. Skipping...")
             return 1
 
-        #Organize creations into the histogram
+        # Organize creations into the histogram
         for entry in self.creations:
             fileHistogram[int(entry.mtime - minimum)].append(entry)
 
-        #Prep for analysis
+        # Prep for analysis
         empty_count = 0
         clusters = 0
         flag = False
@@ -186,7 +241,7 @@ class Changeset(object):
         cluster_list = []
         timeHistogram = []
 
-        #Analyze
+        # Analyze
         for index, histBin in enumerate(fileHistogram):
             numChanges = len(histBin)
             if numChanges > 2:
@@ -208,10 +263,10 @@ class Changeset(object):
             lastFlag = flag
             timeHistogram.append(numChanges)
 
-        #All done!
+        # All done!
         return len(cluster_list)
 
-    def sort(self):
+    def __sort(self):
         """
         Sorts all internal records by mtime
         """
@@ -219,6 +274,54 @@ class Changeset(object):
         self.modifications = sorted(self.modifications)
         self.deletions = sorted(self.deletions)
         return
+
+    def __balance(self):
+        """
+        Create a proper "delta" by pruning all records lists of entries that
+        were both created and deleted within the same changeset. Ususally only
+        called by close()
+        """
+        for deletion_record in self.deletions:
+            #Make sure we're not working with a None (you'll see why in a sec)
+            if deletion_record is not None:
+                #If a created file was subsequently deleted within the same interval
+                #either the creation record or the deletion record has to go. The
+                #older record gets the axe
+                for creation_record in self.creations:
+                    if creation_record is not None:
+                        if deletion_record.filename == creation_record.filename:
+                            try:
+                                if deletion_record > creation_record:
+                                    #Remember, never change the size of a list while you
+                                    #iterate over it! Instead, we just replace it with None
+                                    #and take it out later
+                                    self.creations[self.creations.index(creation_record)] = None
+                                else:
+                                    self.deletions[self.deletions.index(deletion_record)] = None
+                            except ValueError:
+                                #This usually just means that we already
+                                #deleted the record for some other reason.
+                                #No biggie
+                                pass
+
+            # Check again, just to make sure we didn't delete the current record
+            if deletion_record is not None:
+                #Same goes for modification records
+                for modification_record in self.modifications:
+                    if modification_record is not None:
+                        if deletion_record.filename == modification_record.filename:
+                            try:
+                                if deletion_record > modification_record:
+                                    self.modifications[self.modifications.index(modification_record)] = None
+                                else:
+                                    self.deletions[self.deletions.index(deletion_record)] = None
+                            except ValueError:
+                                pass
+
+        #Finally, clean the list of Nones
+        self.creations = list(filter(None, self.creations))
+        self.deletions = list(filter(None, self.deletions))
+        self.modifications = list(filter(None, self.modifications))
 
     def __add__(self, other):
         """
@@ -237,12 +340,3 @@ class Changeset(object):
         sum_changeset.close(highest_close_time)
 
         return sum_changeset
-
-    def __get_neighbors(self, filepath: str) -> list:
-        """
-        Get all of the "neighbors" of a given file (eg. files that also exist in
-        the same directory)
-        """
-        excluded_entries = [basename(filepath), ".", ".."]
-        files = [f for f in listdir(dirname(filepath)) if isfile(f)]
-        return list(set(files) - set(excluded_entries))
