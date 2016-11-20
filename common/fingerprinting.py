@@ -46,6 +46,7 @@ class Fingerprint(np.ndarray):
         # add the new attribute to the created instance
         obj.method = method
         obj.labels = []
+        obj.predicted_quantity = -1
         # Finally, we must return the newly created object:
         return obj
 
@@ -134,6 +135,9 @@ def changeset_to_fingerprint(changeset: Changeset, method: FingerprintingMethod,
 
     # Then add the labels
     result_fingerprint.labels = changeset.labels
+
+    # Then use quantity prediction
+    result_fingerprint.predicted_quantity = changeset.predict_quantity()
 
     # All done!
     return result_fingerprint

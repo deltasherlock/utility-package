@@ -1,7 +1,7 @@
 import os
 import gensim
-import logging
-logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+#import logging
+#logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 class SentencesFromDirectory(object):
     """Create an iterable object from a directory full of sentence files"""

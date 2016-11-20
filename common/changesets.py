@@ -1,5 +1,5 @@
 # DeltaSherlock. See README.md for usage. See LICENSE for MIT/X11 license info.
-# pylint: disable=W0141
+# pylint: disable=W0141,C0326
 """
 DeltaSherlock changeset types
 """
@@ -12,10 +12,10 @@ class ChangesetRecord(object):
     """
     Container for an filesystem change record
     """
-    def __init__(self, filename: str, mtime: int, neighbors: str = list()):
+    def __init__(self, filename: str, mtime: int, neighbors: list = None):
         self.filename = filename
         self.mtime = mtime
-        self.neighbors = neighbors
+        self.neighbors = neighbors if neighbors is not None else []
         return
 
     def filetree_sentence(self) -> list:
@@ -31,14 +31,6 @@ class ChangesetRecord(object):
         words (neighbor)
         """
         return [basename(self.filename)] + self.neighbors
-
-    # def add_neighbor(self, filename: str):
-    #     """
-    #     Add a record for a file that coexists inside the same directory as this
-    #     record's file. Filename should not include path
-    #     """
-    #     self.neighbors.append(filename)
-    #     return
 
     def find_neighbors(self):
         """
@@ -70,6 +62,9 @@ class ChangesetRecord(object):
         Allows comparison by mtime
         """
         return self.mtime > other.mtime
+
+    def __repr__(self):
+        return ("<" + self.filename + " at " + str(self.mtime) + ">")
 
 
 class Changeset(object):
@@ -264,7 +259,9 @@ class Changeset(object):
             timeHistogram.append(numChanges)
 
         # All done!
-        return len(cluster_list)
+        import ipdb; ipdb.set_trace()
+        #return len(cluster_list)
+        return clusters
 
     def __sort(self):
         """
@@ -280,48 +277,76 @@ class Changeset(object):
         Create a proper "delta" by pruning all records lists of entries that
         were both created and deleted within the same changeset. Ususally only
         called by close()
+
         """
-        for deletion_record in self.deletions:
-            #Make sure we're not working with a None (you'll see why in a sec)
-            if deletion_record is not None:
-                #If a created file was subsequently deleted within the same interval
-                #either the creation record or the deletion record has to go. The
-                #older record gets the axe
-                for creation_record in self.creations:
-                    if creation_record is not None:
-                        if deletion_record.filename == creation_record.filename:
-                            try:
-                                if deletion_record > creation_record:
-                                    #Remember, never change the size of a list while you
-                                    #iterate over it! Instead, we just replace it with None
-                                    #and take it out later
-                                    self.creations[self.creations.index(creation_record)] = None
-                                else:
-                                    self.deletions[self.deletions.index(deletion_record)] = None
-                            except ValueError:
-                                #This usually just means that we already
-                                #deleted the record for some other reason.
-                                #No biggie
-                                pass
+        self.creations = self.__filter_duplicates(self.creations)
+        self.modifications = self.__filter_duplicates(self.modifications)
+        self.deletions = self.__filter_duplicates(self.deletions)
+        ### The following code does the actual "balancing", but this was buggy
+        ### and probably not needed
+        # for deletion_record in self.deletions:
+        #     #Make sure we're not working with a None (you'll see why in a sec)
+        #     if deletion_record is not None:
+        #         #If a created file was subsequently deleted within the same interval
+        #         #either the creation record or the deletion record has to go. The
+        #         #older record gets the axe
+        #         for creation_record in self.creations:
+        #             if creation_record is not None:
+        #                 if deletion_record.filename == creation_record.filename:
+        #                     try:
+        #                         if deletion_record > creation_record:
+        #                             #Remember, never change the size of a list while you
+        #                             #iterate over it! Instead, we just replace it with None
+        #                             #and take it out later
+        #                             #TODO Re-enable or fix
+        #                             pass
+        #                             #self.creations[self.creations.index(creation_record)] = None
+        #                         else:
+        #                             self.deletions[self.deletions.index(deletion_record)] = None
+        #                     except ValueError:
+        #                         #This usually just means that we already
+        #                         #deleted the record for some other reason.
+        #                         #No biggie
+        #                         pass
+        #
+        #     # Check again, just to make sure we didn't delete the current record
+        #     if deletion_record is not None:
+        #         #Same goes for modification records
+        #         for modification_record in self.modifications:
+        #             if modification_record is not None:
+        #                 if deletion_record.filename == modification_record.filename:
+        #                     try:
+        #                         if deletion_record > modification_record:
+        #                             self.modifications[self.modifications.index(modification_record)] = None
+        #                         else:
+        #                             self.deletions[self.deletions.index(deletion_record)] = None
+        #                     except ValueError:
+        #                         pass
+        #
+        # #Finally, clean the list of Nones
+        # self.creations = list(filter(None, self.creations))
+        # self.deletions = list(filter(None, self.deletions))
+        # self.modifications = list(filter(None, self.modifications))
 
-            # Check again, just to make sure we didn't delete the current record
-            if deletion_record is not None:
-                #Same goes for modification records
-                for modification_record in self.modifications:
-                    if modification_record is not None:
-                        if deletion_record.filename == modification_record.filename:
-                            try:
-                                if deletion_record > modification_record:
-                                    self.modifications[self.modifications.index(modification_record)] = None
-                                else:
-                                    self.deletions[self.deletions.index(deletion_record)] = None
-                            except ValueError:
-                                pass
+    @classmethod
+    def __filter_duplicates(cls, records: list) -> list:
+        """
+        Filters a list of changeset records for duplicates, only leaving the
+        latest changes behind
+        """
+        new_records = []
 
-        #Finally, clean the list of Nones
-        self.creations = list(filter(None, self.creations))
-        self.deletions = list(filter(None, self.deletions))
-        self.modifications = list(filter(None, self.modifications))
+        for record in records:
+            #First, scan the new list to ensure this does not already exist
+            handled = False
+            for new_record in new_records:
+                if new_record.filename == record.filename and record > new_record:
+                    new_records[new_records.index(new_record)] = record
+                    handled = True
+            if not handled:
+                new_records.append(record)
+
+        return new_records
 
     def __add__(self, other):
         """
@@ -340,3 +365,10 @@ class Changeset(object):
         sum_changeset.close(highest_close_time)
 
         return sum_changeset
+
+    def __repr__(self):
+        return ("<" + ("Open" if self.open else "Closed") + " changeset from " +
+                 str(self.open_time) + " to " + str(self.close_time) + " with " +
+                 str(len(self.creations)) + " creations, " +
+                 str(len(self.modifications)) + " modifications, and " +
+                 str(len(self.deletions)) + " deletions.>")
