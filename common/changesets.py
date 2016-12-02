@@ -85,6 +85,8 @@ class Changeset(object):
         self.deletions = []
 
         self.labels = []
+
+        self.predicted_quantity = -1
         return
 
     def add_creation_record(self, filename: str, mtime: int):
@@ -130,6 +132,9 @@ class Changeset(object):
         #And finally, set the close markers
         self.close_time = close_time
         self.open = False
+
+        #Run the quantity analysis
+        self.predicted_quantity = self.__predict_quantity
         return
 
     def get_filetree_sentences(self) -> list:
@@ -201,10 +206,11 @@ class Changeset(object):
         self.labels.append(label)
         return
 
-    def predict_quantity(self) -> int:
+    def __predict_quantity(self) -> int:
         """
         Uses histogram analysis to make an educated guess as to how many
-        installations occured within this changeset. Only looks at file creations
+        installations occured within this changeset. Only looks at file creations.
+        Should only be called by close(). Value can be found in .predicted_quantity
 
         :returns: the predicted quantity of apps
         """
