@@ -134,7 +134,7 @@ class Changeset(object):
         self.open = False
 
         #Run the quantity analysis
-        self.predicted_quantity = self.__predict_quantity
+        self.predicted_quantity = self.__predict_quantity()
         return
 
     def get_filetree_sentences(self) -> list:
@@ -217,6 +217,10 @@ class Changeset(object):
         if self.open:
             raise ValueError("Cannot predict quatity on an open changeset")
 
+        if len(self.creations) == 0:
+            # No creations, no prediction
+            return 0
+
         # First, figure out the bounds of our histogram
         self.__sort()
         minimum = float(self.creations[0].mtime)
@@ -265,7 +269,7 @@ class Changeset(object):
             timeHistogram.append(numChanges)
 
         # All done!
-        import ipdb; ipdb.set_trace()
+        #import ipdb; ipdb.set_trace()
         #return len(cluster_list)
         return clusters
 

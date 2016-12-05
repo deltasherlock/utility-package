@@ -6,31 +6,12 @@ filesystem activity
 """
 # pylint: disable=C0103
 import time
-import os
 import tempfile
-import string
-import random
 from deltasherlock.common import fingerprinting as fp
 from deltasherlock.common import dictionaries as dc
 from deltasherlock.client.ds_watchdog import DeltaSherlockWatchdog
 from deltasherlock.server import learning as lrn
-
-def uid(size=6, chars=string.ascii_uppercase + string.digits):
-    """Generates a nice short unique ID for random files"""
-    return ''.join(random.choice(chars) for _ in range(size))
-
-def random_activity(testdirpath):
-    files_created = []
-    for i in range(10):
-        files_created.append(tempfile.mkstemp(dir=testdirpath, suffix=str(uid())))
-    testsubdirpath = os.path.join(testdirpath, str(uid()))
-    os.mkdir(testsubdirpath)
-    time.sleep(2)
-    for i in range(15):
-        files_created.append(tempfile.mkstemp(dir=testsubdirpath, suffix=str(uid())))
-    time.sleep(2)
-
-    return files_created
+from deltasherlock.common.io import random_activity,uid
 
 testdirpath = tempfile.mkdtemp(suffix=str(uid()))
 print("Created test directory " + testdirpath)
@@ -161,6 +142,18 @@ myCombinedFPU2 = fp.changeset_to_fingerprint(testcsU2, fp.FingerprintingMethod.c
                                            neighbor_dictionary=myNDict)
 print("Testing recognition of that action (should print ChangesetU)")
 print(str(myMLModel.predict(myCombinedFPU2)))
+
+print("-------BEGIN API TESTING-------")
+print("Ensure Redis Server and RQ worker are running")
+import requests
+import pickle
+print("Saving model to /tmp/DS_MLModel")
+pickle.dump(myMLModel, open("/tmp/DS_MLModel", mode='wb'))
+url = "http://127.0.0.1:8000/fingerprint/submit/"
+data = { "fingerprint" : pickle.dumps(myCombinedFPU2)}
+print("Submitting myCombinedFPU2 to API. Job ID will print below")
+r = requests.post(url, data=data)
+print(str(r.status_code) + ": " + r.text)
 
 print("All done!")
 

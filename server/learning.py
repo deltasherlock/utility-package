@@ -37,6 +37,7 @@ class MLModel(object):
         Initialize and train the model with a list of Fingerprints using the
         specified MLAlgorithm
         """
+        self.method = fingerprints[0].method
         self.algorithm = algorithm
         if self.algorithm == MLAlgorithm.logistic_regression:
             self.model = LogisticRegression(C=10000)

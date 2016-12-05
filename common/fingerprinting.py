@@ -40,6 +40,10 @@ class Fingerprint(np.ndarray):
     Adapted from https://docs.scipy.org/doc/numpy/user/basics.subclassing.html
     """
     def __new__(cls, input_array, method=FingerprintingMethod.undefined):
+        """
+        Our "constructor." Required for subclassing of numpy array. See link in
+        class docstring
+        """
         # Input array is an already formed ndarray instance
         # We first cast to be our class type
         obj = np.asarray(input_array).view(cls)
@@ -51,11 +55,46 @@ class Fingerprint(np.ndarray):
         return obj
 
     def __array_finalize__(self, obj):
+        """
+        Required for subclassing of ndarray. See link in class docstring
+        """
         if obj is None:
             return
+        # Redeclare all member attributes here, for subclassing purposes
         self.method = getattr(obj, 'method', FingerprintingMethod.undefined)
+        self.labels = getattr(obj, 'labels', [])
+        self.predicted_quantity = getattr(obj, 'predicted_quantity', -1)
+
+    def __reduce__(self):
+        """
+        Reduction method, for pickling. We have to override this because ndarray's
+        __reduce__ does not handle our custom attributes. Adapted from:
+        http://stackoverflow.com/a/26599346
+        """
+        # Call parent __reduce__
+        pickled_state = super().__reduce__()
+        # Create our own tuple to pass to __setstate__
+        new_state = pickled_state[2] + (self.method, self.labels, self.predicted_quantity,)
+        # Return a tuple that replaces the parent's __setstate__ tuple with our own
+        return (pickled_state[0], pickled_state[1], new_state)
+
+    def __setstate__(self, state):
+        """
+        Set-state method, for pickling. Wee have to override this because ndarray's
+        __setstate__ does not handle our custom attributes. Adapted from:
+        http://stackoverflow.com/a/26599346
+        """
+        # Recall our own member attributes from state
+        self.method = state[-3]
+        self.labels = state[-2]
+        self.predicted_quantity = state[-1]
+        # Call the parent's __setstate__ with the other tuple elements.
+        super().__setstate__(state[0:-3])
 
     def __add__(self, other):
+        """
+        Allows for "adding" (read: concatenating) of fingerprints
+        """
         if other is None:
             return self
 
@@ -80,10 +119,16 @@ class Fingerprint(np.ndarray):
         # Then, add the labels together
         sum_fp.labels = self.labels + other.labels
 
+        # Then, adopt the original quantities
+        sum_fp.predicted_quantity = self.predicted_quantity
+
         # All done
         return sum_fp
 
     def __radd__(self, other):
+        """
+        "Reverse-add" helper. Required in order to use the += operator
+        """
         return self.__add__(other)
 
 
@@ -137,7 +182,7 @@ def changeset_to_fingerprint(changeset: Changeset, method: FingerprintingMethod,
     result_fingerprint.labels = changeset.labels
 
     # Then use quantity prediction
-    result_fingerprint.predicted_quantity = changeset.predict_quantity()
+    result_fingerprint.predicted_quantity = changeset.predicted_quantity
 
     # All done!
     return result_fingerprint

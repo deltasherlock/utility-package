@@ -50,14 +50,6 @@ class DeltaSherlockWrapper(models.Model):
     class Meta:
         abstract = True
 
-class FingerprintWrapper(DeltaSherlockWrapper):
-    method = models.IntegerField()
-
-    def wrap(self, object_to_wrap):
-        super().wrap(object_to_wrap)
-        self.method = object_to_wrap.method
-        self.save()
-
 class ChangesetWrapper(DeltaSherlockWrapper):
     open_time = models.DateTimeField()
     close_time = models.DateTimeField()
@@ -70,3 +62,12 @@ class ChangesetWrapper(DeltaSherlockWrapper):
 
     def __str__(self):
         return "CS" + str(self.id) + ": PQ="+str(self.predicted_quantity)+" OT=" + str(self.open_time) + " CT=" + str(self.close_time)
+
+class FingerprintWrapper(DeltaSherlockWrapper):
+    method = models.IntegerField()
+    origin_changeset = models.ManyToManyField(ChangesetWrapper)
+
+    def wrap(self, object_to_wrap):
+        super().wrap(object_to_wrap)
+        self.method = object_to_wrap.method
+        self.save()
