@@ -7,6 +7,7 @@ filesystem activity
 # pylint: disable=C0103
 import time
 import tempfile
+from deltasherlock.client import networking as net
 from deltasherlock.common import fingerprinting as fp
 from deltasherlock.common import dictionaries as dc
 from deltasherlock.client.ds_watchdog import DeltaSherlockWatchdog
@@ -149,10 +150,10 @@ import requests
 import pickle
 print("Saving model to /tmp/DS_MLModel")
 pickle.dump(myMLModel, open("/tmp/DS_MLModel", mode='wb'))
-url = "http://127.0.0.1:8000/fingerprint/submit/"
-data = { "fingerprint" : pickle.dumps(myCombinedFPU2)}
+# url = "http://127.0.0.1:8000/fingerprint/submit/"
+# data = { "fingerprint" : pickle.dumps(myCombinedFPU2)}
 print("Submitting myCombinedFPU2 to API. Job ID will print below")
-r = requests.post(url, data=data)
+r = net.submit_fingerprint(myCombinedFPU2)
 print(str(r.status_code) + ": " + r.text)
 
 print("All done!")
