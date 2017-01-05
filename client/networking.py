@@ -3,7 +3,7 @@
 DeltaSherlock client networking module. Contains methods for communicating with
 a DeltaSherlock server.
 """
-from deltasherlock.common.io import object_to_base64
+from deltasherlock.common.io import DSEncoder
 from deltasherlock.common.fingerprinting import Fingerprint
 from requests import Response, post
 
@@ -11,5 +11,7 @@ from requests import Response, post
 SERVER_URL = "http://127.0.0.1:8000"
 
 def submit_fingerprint(fingerprint: Fingerprint) -> Response:
-    data = { "fingerprint" : object_to_base64(fingerprint) }
-    return post(SERVER_URL+"/fingerprint/submit", data=data)
+    data = {'fingerprint' : DSEncoder().encode(fingerprint),
+            'endpoint_url' : "http://example.org" }
+    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+    return post(SERVER_URL+"/fingerprint/submit", data=data, headers=headers)
