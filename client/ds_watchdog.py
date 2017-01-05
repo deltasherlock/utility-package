@@ -26,7 +26,8 @@ class DeltaSherlockEventHandler(PatternMatchingEventHandler):
         self.current_changeset.add_creation_record(event.src_path, time.time())
 
     def on_modified(self, event):
-        self.current_changeset.add_modification_record(event.src_path, time.time())
+        self.current_changeset.add_modification_record(
+            event.src_path, time.time())
 
     def on_deleted(self, event):
         self.current_changeset.add_deletion_record(event.src_path, time.time())
@@ -34,7 +35,8 @@ class DeltaSherlockEventHandler(PatternMatchingEventHandler):
     def on_moved(self, event):
         # Treated as a deletion of the source and a creation of the destination
         self.current_changeset.add_deletion_record(event.src_path, time.time())
-        self.current_changeset.add_deletion_record(event.dest_path, time.time())
+        self.current_changeset.add_deletion_record(
+            event.dest_path, time.time())
 
     def replace_changeset(self, new_changeset):
         """
@@ -81,7 +83,8 @@ class DeltaSherlockWatchdog(object):
         Close the current changeset being recorded to, open a new one, and
         return the former
         """
-        latest_changeset = self.__handler.replace_changeset(Changeset(time.time()))
+        latest_changeset = self.__handler.replace_changeset(
+            Changeset(time.time()))
         self.__changesets.append(latest_changeset)
         return latest_changeset
 

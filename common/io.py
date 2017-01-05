@@ -10,11 +10,12 @@ import string
 import time
 import json
 import numpy as np
-from base64 import b64encode,b64decode
+from base64 import b64encode, b64decode
 from deltasherlock.common.changesets import Changeset
 from deltasherlock.common.changesets import ChangesetRecord
 from deltasherlock.common.fingerprinting import Fingerprint
 from deltasherlock.common.fingerprinting import FingerprintingMethod
+
 
 def object_to_base64(obj: object) -> str:
     """
@@ -23,11 +24,13 @@ def object_to_base64(obj: object) -> str:
     """
     return b64encode(pickle.dumps(obj)).decode('UTF-8')
 
+
 def base64_to_object(b64_string: str) -> object:
     """
     Converts the result of object_to_base64 back to an object.
     """
     return pickle.loads(b64decode(b64_string))
+
 
 def save_object_as_base64(obj: object, save_path: str):
     """
@@ -38,6 +41,7 @@ def save_object_as_base64(obj: object, save_path: str):
     with open(save_path, 'w') as output_file:
         print(object_to_base64(obj), file=output_file)
 
+
 def load_object_from_base64(load_path: str) -> object:
     """
     Load a file created by save_object_as_base64()
@@ -45,11 +49,13 @@ def load_object_from_base64(load_path: str) -> object:
     with open(load_path, 'r') as input_file:
         return base64_to_object(input_file.read().replace('\n', ''))
 
+
 def uid(size=6, chars=string.ascii_uppercase + string.digits):
     """
     Generates a nice short unique ID for random files. For testing
     """
     return ''.join(random.choice(chars) for _ in range(size))
+
 
 def random_activity(testdirpath):
     """
@@ -57,15 +63,17 @@ def random_activity(testdirpath):
     """
     files_created = []
     for i in range(10):
-        files_created.append(tempfile.mkstemp(dir=testdirpath, suffix=str(uid())))
+        files_created.append(tempfile.mkstemp(
+            dir=testdirpath, suffix=str(uid())))
     testsubdirpath = os.path.join(testdirpath, str(uid()))
     os.mkdir(testsubdirpath)
-    time.sleep(2)
+    time.sleep(1)
     for i in range(15):
-        files_created.append(tempfile.mkstemp(dir=testsubdirpath, suffix=str(uid())))
-    time.sleep(2)
-
+        files_created.append(tempfile.mkstemp(
+            dir=testsubdirpath, suffix=str(uid())))
+    time.sleep(1)
     return files_created
+
 
 class DSEncoder(json.JSONEncoder):
     """
@@ -87,7 +95,7 @@ class DSEncoder(json.JSONEncoder):
             serializable['type'] = "Fingerprint"
             serializable['method'] = o.method.value
             serializable['labels'] = o.labels
-            serialziable['predicted_quantity'] = o.predicted_quantity
+            serializable['predicted_quantity'] = o.predicted_quantity
             serializable['array'] = o.tolist()
 
         elif (isinstance(o, Changeset)):
@@ -98,7 +106,7 @@ class DSEncoder(json.JSONEncoder):
             serializable['labels'] = o.labels
             serializable['predicted_quantity'] = o.predicted_quantity
 
-            #Rescursively serialize the file change lists
+            # Rescursively serialize the file change lists
             serializable['creations'] = list()
             for cs_record in o.creations:
                 serializable['creations'].append(default(cs_record))
@@ -123,9 +131,12 @@ class DSEncoder(json.JSONEncoder):
 
         return serializable
 
+
 class DSDecoder(json.JSONDecoder):
+
     def __init__(self, *args, **kwargs):
-        json.JSONDecoder.__init__(self, object_hook=self.object_hook, *args, **kwargs)
+        json.JSONDecoder.__init__(
+            self, object_hook=self.object_hook, *args, **kwargs)
 
     def object_hook(self, obj: dict):
         """
@@ -136,10 +147,10 @@ class DSDecoder(json.JSONDecoder):
         :returns: the corresponding DeltaSherlock object
         """
         deserialized = None
-        import ipdb; ipdb.set_trace()
+        #import ipdb; ipdb.set_trace()
         if obj['type'] == "Fingerprint":
             deserialized = Fingerprint(np.array(obj['array']))
-            deserialized.method = FingerprintingMethod(obj.method)
+            deserialized.method = FingerprintingMethod(obj['method'])
             deserialized.labels = obj['labels']
             deserialized.predicted_quantity = obj['predicted_quantity']
 
@@ -163,10 +174,11 @@ class DSDecoder(json.JSONDecoder):
                 deserialized.deletions.append(object_hook(cs_record_ser))
 
         elif obj['type'] == "ChangesetRecord":
-            deserialized = ChangesetRecord(obj['filename'], obj['mtime'], obj['neighbors'])
+            deserialized = ChangesetRecord(
+                obj['filename'], obj['mtime'], obj['neighbors'])
 
         else:
-            #Give up
+            # Give up
             raise ValueError("Unable to determine type of JSON object")
 
         return deserialized

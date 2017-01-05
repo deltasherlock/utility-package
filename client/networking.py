@@ -7,11 +7,12 @@ from deltasherlock.common.io import DSEncoder
 from deltasherlock.common.fingerprinting import Fingerprint
 from requests import Response, post
 
-#Do not include trailing slash
+# Do not include trailing slash
 SERVER_URL = "http://127.0.0.1:8000"
 
-def submit_fingerprint(fingerprint: Fingerprint) -> Response:
-    data = {'fingerprint' : DSEncoder().encode(fingerprint),
-            'endpoint_url' : "http://example.org" }
-    headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
-    return post(SERVER_URL+"/fingerprint/submit", data=data, headers=headers)
+
+def submit_fingerprint(fingerprint: Fingerprint, endpoint_url: str, parameters: str) -> Response:
+    data = {'fingerprint': DSEncoder().encode(fingerprint),
+            'endpoint_url': endpoint_url,
+            'parameters': parameters}
+    return post(SERVER_URL + "/fingerprint/submit/", data=data)

@@ -3,8 +3,10 @@ import gensim
 #import logging
 #logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
+
 class SentencesFromDirectory(object):
     """Create an iterable object from a directory full of sentence files"""
+
     def __init__(self, dirname):
         self.dirname = dirname
 
@@ -13,14 +15,17 @@ class SentencesFromDirectory(object):
             for line in open(os.path.join(self.dirname, fname)):
                 yield line.split()
 
+
 class SentencesFromFile(object):
     """Create an iterable object from a single sentence file"""
+
     def __init__(self, filename):
         self.filename = filename
 
     def __iter__(self):
         for line in open(os.path.abspath(self.filename)):
             yield line.split()
+
 
 def create_dictionary(sentences, threads=4):
     """
@@ -30,5 +35,6 @@ def create_dictionary(sentences, threads=4):
     :param threads: how many workers to make w2v use (default: 4)
     :returns: the dictionary (may take a while)
     """
-    model = gensim.models.Word2Vec(sentences, size=200, workers=threads, min_count=1)
+    model = gensim.models.Word2Vec(
+        sentences, size=200, workers=threads, min_count=1)
     return model

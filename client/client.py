@@ -31,19 +31,22 @@ def main():
                  config['main']['log_location'], str(logger),
                  logger.getEffectiveLevel())
     logger.debug("Command line arguments loaded: %s", str(args))
-    logger.debug("Config file loaded: %s yielded %s", args.config_file, str(config))
+    logger.debug("Config file loaded: %s yielded %s",
+                 args.config_file, str(config))
 
     if args.daemon:
-        #Exceute the central loop
+        # Exceute the central loop
         interval = config['daemon'].getint('interval')
         logger.debug("Entering daemon mode loop with interval %i", interval)
     else:
-        #Perform one check, then exit
+        # Perform one check, then exit
         logger.debug("Daemon mode disabled. Running once then exiting")
+
 
 def init_args():
     """Process command line arguments"""
-    parser = argparse.ArgumentParser(description="DeltaSherlock Client software.")
+    parser = argparse.ArgumentParser(
+        description="DeltaSherlock Client software.")
     parser.add_argument('-v', '--version', action='version', version=VERSION)
     parser.add_argument('-c', '--config', action='store', dest='config_file',
                         default='./config.ini', help="Path to config file. [default: \

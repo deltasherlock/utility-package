@@ -13,6 +13,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 from deltasherlock.common.fingerprinting import Fingerprint
 
+
 @unique
 class MLAlgorithm(Enum):
     """
@@ -28,10 +29,12 @@ class MLAlgorithm(Enum):
     adaboost = 6
     gradient_boosting = 7
 
+
 class MLModel(object):
     """
     Container for items needed to machine learn
     """
+
     def __init__(self, fingerprints: list, algorithm: MLAlgorithm):
         """
         Initialize and train the model with a list of Fingerprints using the
@@ -57,11 +60,11 @@ class MLModel(object):
         else:
             raise ValueError("Invalid MLAlgorithm specified")
 
-        #Setup ML Resources
+        # Setup ML Resources
         self.classifier = OneVsRestClassifier(self.model)
         self.binarizer = preprocessing.MultiLabelBinarizer()
 
-        #Creates list of labels, in order
+        # Creates list of labels, in order
         self.labels = []
         for fingerprint in fingerprints:
             self.labels.append(fingerprint.labels)
@@ -74,13 +77,15 @@ class MLModel(object):
         prediction = None
 
         # get the class probabilities
-        probabilities = self.classifier.predict_proba(fingerprint.reshape(1, -1))
+        probabilities = self.classifier.predict_proba(
+            fingerprint.reshape(1, -1))
 
         # Prevent wild quantity predictions from breaking everything
-        #TODO Don't hardcode 50
+        # TODO Don't hardcode 50
         if fingerprint.predicted_quantity > 0 and fingerprint.predicted_quantity <= 50:
             # get top n class probabilities
-            topNClasses = np.argpartition(probabilities[0], -fingerprint.predicted_quantity)[-fingerprint.predicted_quantity:]
+            topNClasses = np.argpartition(probabilities[
+                                          0], -fingerprint.predicted_quantity)[-fingerprint.predicted_quantity:]
 
             # create a sparse array of 1's and 0's marking the label indices
             prediction = np.zeros((1, self.classifier.classes_.shape[0]))

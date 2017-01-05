@@ -12,6 +12,7 @@ class ChangesetRecord(object):
     """
     Container for an filesystem change record
     """
+
     def __init__(self, filename: str, mtime: int, neighbors: list = None):
         self.filename = filename
         self.mtime = mtime
@@ -120,20 +121,21 @@ class Changeset(object):
         self.__balance()
         self.__sort()
 
-        #Now that everything is balanced, find the neighbors of each changeset record
+        # Now that everything is balanced, find the neighbors of each changeset
+        # record
         for record in chain(self.creations, self.modifications, self.deletions):
             try:
                 record.find_neighbors()
             except IOError:
                 # File or containing directory no longer exists
-                #TODO Log this? Probably can't do much else about this
+                # TODO Log this? Probably can't do much else about this
                 pass
 
-        #And finally, set the close markers
+        # And finally, set the close markers
         self.close_time = close_time
         self.open = False
 
-        #Run the quantity analysis
+        # Run the quantity analysis
         self.predicted_quantity = self.__predict_quantity()
         return
 
@@ -270,7 +272,7 @@ class Changeset(object):
 
         # All done!
         #import ipdb; ipdb.set_trace()
-        #return len(cluster_list)
+        # return len(cluster_list)
         return clusters
 
     def __sort(self):
@@ -292,8 +294,8 @@ class Changeset(object):
         self.creations = self.__filter_duplicates(self.creations)
         self.modifications = self.__filter_duplicates(self.modifications)
         self.deletions = self.__filter_duplicates(self.deletions)
-        ### The following code does the actual "balancing", but this was buggy
-        ### and probably not needed
+        # The following code does the actual "balancing", but this was buggy
+        # and probably not needed
         # for deletion_record in self.deletions:
         #     #Make sure we're not working with a None (you'll see why in a sec)
         #     if deletion_record is not None:
@@ -347,7 +349,7 @@ class Changeset(object):
         new_records = []
 
         for record in records:
-            #First, scan the new list to ensure this does not already exist
+            # First, scan the new list to ensure this does not already exist
             handled = False
             for new_record in new_records:
                 if new_record.filename == record.filename and record > new_record:
@@ -370,7 +372,8 @@ class Changeset(object):
 
         sum_changeset = Changeset(lowest_open_time)
         sum_changeset.creations = sorted(self.creations + other.creations)
-        sum_changeset.modifications = sorted(self.modifications + other.modifications)
+        sum_changeset.modifications = sorted(
+            self.modifications + other.modifications)
         sum_changeset.deletions = sorted(self.deletions + other.deletions)
         sum_changeset.close(highest_close_time)
 
@@ -378,7 +381,7 @@ class Changeset(object):
 
     def __repr__(self):
         return ("<" + ("Open" if self.open else "Closed") + " changeset from " +
-                 str(self.open_time) + " to " + str(self.close_time) + " with " +
-                 str(len(self.creations)) + " creations, " +
-                 str(len(self.modifications)) + " modifications, and " +
-                 str(len(self.deletions)) + " deletions.>")
+                str(self.open_time) + " to " + str(self.close_time) + " with " +
+                str(len(self.creations)) + " creations, " +
+                str(len(self.modifications)) + " modifications, and " +
+                str(len(self.deletions)) + " deletions.>")

@@ -14,5 +14,5 @@ class FingerprintSubmit(APIView):
     def post(self, request, format=None):
         q = Queue(connection=Redis())
         print(request.data)
-        job = q.enqueue('deltasherlock.server.worker.process_fingerprint', request.data['fingerprint'], request.data['endpoint_url'])
+        job = q.enqueue('deltasherlock.server.worker.process_fingerprint', request.data['fingerprint'], request.data['endpoint_url'], request.data['parameters'])
         return Response(job.id, status=status.HTTP_202_ACCEPTED)

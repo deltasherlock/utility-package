@@ -12,7 +12,7 @@ from deltasherlock.common import fingerprinting as fp
 from deltasherlock.common import dictionaries as dc
 from deltasherlock.client.ds_watchdog import DeltaSherlockWatchdog
 from deltasherlock.server import learning as lrn
-from deltasherlock.common.io import random_activity,uid
+from deltasherlock.common.io import random_activity, uid
 
 testdirpath = tempfile.mkdtemp(suffix=str(uid()))
 print("Created test directory " + testdirpath)
@@ -47,7 +47,8 @@ testcs3 = dswd.mark()
 
 time.sleep(5)
 print("Breaking... Feel free to install something now")
-import ipdb; ipdb.set_trace()
+import ipdb
+ipdb.set_trace()
 time.sleep(5)
 print("Marking CSU...")
 testcsU = dswd.mark()
@@ -65,12 +66,14 @@ testcsU.add_label("ChangesetU")
 
 print("Creating neighbor dictionary...")
 
-all_neighbor_sentences = testcs1.get_neighbor_sentences()+testcs2.get_neighbor_sentences()+testcs3.get_neighbor_sentences()+testcsU.get_neighbor_sentences()
+all_neighbor_sentences = testcs1.get_neighbor_sentences() + testcs2.get_neighbor_sentences() + \
+    testcs3.get_neighbor_sentences() + testcsU.get_neighbor_sentences()
 
 myNDict = dc.create_dictionary(all_neighbor_sentences, threads=1)
 
 print("Creating filetree dictionary...")
-all_filetree_sentences = testcs1.get_filetree_sentences()+testcs2.get_filetree_sentences()+testcs3.get_filetree_sentences()+testcsU.get_filetree_sentences()
+all_filetree_sentences = testcs1.get_filetree_sentences() + testcs2.get_filetree_sentences() + \
+    testcs3.get_filetree_sentences() + testcsU.get_filetree_sentences()
 myFTDict = dc.create_dictionary(all_filetree_sentences, threads=1)
 
 #print("Trying neighbor sanity check...")
@@ -83,10 +86,14 @@ myFTDict = dc.create_dictionary(all_filetree_sentences, threads=1)
 # del dswd
 
 print("Creating a histogram fingerprint")
-myHistogramFP1 = fp.changeset_to_fingerprint(testcs1, fp.FingerprintingMethod.histogram)
-myHistogramFP2 = fp.changeset_to_fingerprint(testcs2, fp.FingerprintingMethod.histogram)
-myHistogramFP3 = fp.changeset_to_fingerprint(testcs3, fp.FingerprintingMethod.histogram)
-myHistogramFPU = fp.changeset_to_fingerprint(testcsU, fp.FingerprintingMethod.histogram)
+myHistogramFP1 = fp.changeset_to_fingerprint(
+    testcs1, fp.FingerprintingMethod.histogram)
+myHistogramFP2 = fp.changeset_to_fingerprint(
+    testcs2, fp.FingerprintingMethod.histogram)
+myHistogramFP3 = fp.changeset_to_fingerprint(
+    testcs3, fp.FingerprintingMethod.histogram)
+myHistogramFPU = fp.changeset_to_fingerprint(
+    testcsU, fp.FingerprintingMethod.histogram)
 
 # print("Printing that...")
 # print(myHistogramFP)
@@ -94,22 +101,22 @@ myHistogramFPU = fp.changeset_to_fingerprint(testcsU, fp.FingerprintingMethod.hi
 
 print("Creating a combined fingerprint")
 myCombinedFP1 = fp.changeset_to_fingerprint(testcs1, fp.FingerprintingMethod.combined,
-                                           filetree_dictionary=myFTDict,
-                                           neighbor_dictionary=myNDict)
+                                            filetree_dictionary=myFTDict,
+                                            neighbor_dictionary=myNDict)
 myCombinedFP2 = fp.changeset_to_fingerprint(testcs2, fp.FingerprintingMethod.combined,
-                                           filetree_dictionary=myFTDict,
-                                           neighbor_dictionary=myNDict)
+                                            filetree_dictionary=myFTDict,
+                                            neighbor_dictionary=myNDict)
 myCombinedFP3 = fp.changeset_to_fingerprint(testcs3, fp.FingerprintingMethod.combined,
-                                           filetree_dictionary=myFTDict,
-                                           neighbor_dictionary=myNDict)
+                                            filetree_dictionary=myFTDict,
+                                            neighbor_dictionary=myNDict)
 myCombinedFPU = fp.changeset_to_fingerprint(testcsU, fp.FingerprintingMethod.combined,
-                                           filetree_dictionary=myFTDict,
-                                           neighbor_dictionary=myNDict)
+                                            filetree_dictionary=myFTDict,
+                                            neighbor_dictionary=myNDict)
 
 # print("Printing that...")
 # print(myCombinedFP)
 #print("Printing labels in FP")
-#print(str(myCombinedFP.labels))
+# print(str(myCombinedFP.labels))
 
 print("Printing predicted quantities")
 print(str(myCombinedFP1.predicted_quantity))
@@ -118,7 +125,8 @@ print(str(myCombinedFP3.predicted_quantity))
 print(str(myCombinedFPU.predicted_quantity))
 
 print("Creating a machine learning model from the combine FP")
-myMLModel = lrn.MLModel([myCombinedFP1, myCombinedFP2, myCombinedFP3, myCombinedFPU], lrn.MLAlgorithm.decision_tree)
+myMLModel = lrn.MLModel([myCombinedFP1, myCombinedFP2,
+                         myCombinedFP3, myCombinedFPU], lrn.MLAlgorithm.decision_tree)
 
 print("Testing recognition of ChangesetU")
 print(str(myMLModel.predict(myCombinedFPU)))
@@ -139,8 +147,8 @@ print("Marking...")
 testcsU2 = dswd.mark()
 print("Creating a combined fingerprint from that action")
 myCombinedFPU2 = fp.changeset_to_fingerprint(testcsU2, fp.FingerprintingMethod.combined,
-                                           filetree_dictionary=myFTDict,
-                                           neighbor_dictionary=myNDict)
+                                             filetree_dictionary=myFTDict,
+                                             neighbor_dictionary=myNDict)
 print("Testing recognition of that action (should print ChangesetU)")
 print(str(myMLModel.predict(myCombinedFPU2)))
 

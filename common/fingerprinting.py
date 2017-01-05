@@ -74,8 +74,10 @@ class Fingerprint(np.ndarray):
         # Call parent __reduce__
         pickled_state = super().__reduce__()
         # Create our own tuple to pass to __setstate__
-        new_state = pickled_state[2] + (self.method, self.labels, self.predicted_quantity,)
-        # Return a tuple that replaces the parent's __setstate__ tuple with our own
+        new_state = pickled_state[
+            2] + (self.method, self.labels, self.predicted_quantity,)
+        # Return a tuple that replaces the parent's __setstate__ tuple with our
+        # own
         return (pickled_state[0], pickled_state[1], new_state)
 
     def __setstate__(self, state):
@@ -168,7 +170,8 @@ def changeset_to_fingerprint(changeset: Changeset, method: FingerprintingMethod,
             or method is FingerprintingMethod.combined):
         if filetree_dictionary is None:
             raise ValueError("Missing filetree w2v dictionary")
-        result_fingerprint += __filetree_fingerprint(basenames, filetree_dictionary)
+        result_fingerprint += __filetree_fingerprint(
+            basenames, filetree_dictionary)
 
     # Then the neighbor fingerprint
     if (method is FingerprintingMethod.neighbor
@@ -176,7 +179,8 @@ def changeset_to_fingerprint(changeset: Changeset, method: FingerprintingMethod,
             or method is FingerprintingMethod.combined):
         if neighbor_dictionary is None:
             raise ValueError("Missing neighbor w2v dictionary")
-        result_fingerprint += __neighbor_fingerprint(basenames, neighbor_dictionary)
+        result_fingerprint += __neighbor_fingerprint(
+            basenames, neighbor_dictionary)
 
     # Then add the labels
     result_fingerprint.labels = changeset.labels
@@ -214,7 +218,7 @@ def __histogram_fingerprint(basenames: list, num_bins: int=200) -> Fingerprint:
     ybin.append(10000)
     if ele_num is 0:
         ele_num = 1
-    raw_histogram = np.histogram(ascii_sum_vector, bins = ybin)[0]
+    raw_histogram = np.histogram(ascii_sum_vector, bins=ybin)[0]
     normalized_histogram = raw_histogram * 1.0 / ele_num   # Normalized hist
     return Fingerprint(normalized_histogram, method=FingerprintingMethod.histogram)
 
@@ -234,10 +238,10 @@ def __w2v_fingerprint_array(basenames: list, w2v_dictionary: Word2Vec) -> np.nda
     fingerprint_arr = np.array([0] * 200)
 
     for basename in basenames:
-        #Clean up the basenames, just in case
+        # Clean up the basenames, just in case
         basename = basename.rstrip('\",\n').strip('[').strip(' ').strip('\"')
         basename = basename.strip('\,').rstrip(',\"').strip('\t').strip(',')
-        #Now look up each basename in the dictionary
+        # Now look up each basename in the dictionary
         if basename in w2v_dictionary:
             fingerprint_arr = w2v_dictionary[basename] + fingerprint_arr
 
