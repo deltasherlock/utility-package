@@ -30,6 +30,12 @@ class FingerprintingMethod(Enum):
     filetreeneighbor = 6
     combined = 7
 
+    def requires_filetree_dict(self):
+        return (self.value == self.filetree.value or self.value == self.histofiletree.value or self.value == self.combined.value)
+
+    def requires_neighbor_dict(self):
+        return (self.value == self.neighbor.value or self.value == self.histoneighbor.value or self.value == self.combined.value)
+
 
 class Fingerprint(np.ndarray):
     """
@@ -44,6 +50,11 @@ class Fingerprint(np.ndarray):
     :attribute predicted_quantity: the quantity of events (ie an application
     installation) that probably occurred during the recording interval.
     Determined by the original Changeset
+    :attribute db_id: an optional identifier populated when a fingerprint is
+    "unwrapped" from the database
+    :attribute cs_db_id: an optional identifier populated when a fingerprint is
+    "unwrapped" from the database. This points to the fingerprint's origin
+    changeset
 
     Adapted from https://docs.scipy.org/doc/numpy/user/basics.subclassing.html
     """
@@ -59,6 +70,8 @@ class Fingerprint(np.ndarray):
         obj.method = method
         obj.labels = []
         obj.predicted_quantity = -1
+        obj.db_id = None
+        obj.cs_db_id = None
         # Finally, we must return the newly created object:
         return obj
 
@@ -72,6 +85,8 @@ class Fingerprint(np.ndarray):
         self.method = getattr(obj, 'method', FingerprintingMethod.undefined)
         self.labels = getattr(obj, 'labels', [])
         self.predicted_quantity = getattr(obj, 'predicted_quantity', -1)
+        self.db_id = getattr(obj, 'db_id', None)
+        self.cs_db_id = getattr(obj, 'cs_db_id', None)
 
     def __reduce__(self):
         """
@@ -83,7 +98,7 @@ class Fingerprint(np.ndarray):
         pickled_state = super().__reduce__()
         # Create our own tuple to pass to __setstate__
         new_state = pickled_state[
-            2] + (self.method, self.labels, self.predicted_quantity,)
+            2] + (self.method, self.labels, self.predicted_quantity, self.db_id, self.cs_db_id)
         # Return a tuple that replaces the parent's __setstate__ tuple with our
         # own
         return (pickled_state[0], pickled_state[1], new_state)
@@ -95,11 +110,13 @@ class Fingerprint(np.ndarray):
         http://stackoverflow.com/a/26599346
         """
         # Recall our own member attributes from state
-        self.method = state[-3]
-        self.labels = state[-2]
-        self.predicted_quantity = state[-1]
+        self.method = state[-5]
+        self.labels = state[-4]
+        self.predicted_quantity = state[-3]
+        self.db_id = state[-2]
+        self.cs_db_id = state[-1]
         # Call the parent's __setstate__ with the other tuple elements.
-        super().__setstate__(state[0:-3])
+        super().__setstate__(state[0:-5])
 
     def __add__(self, other):
         """
@@ -173,18 +190,14 @@ def changeset_to_fingerprint(changeset: Changeset, method: FingerprintingMethod,
         result_fingerprint += __histogram_fingerprint(basenames)
 
     # Then generate a filetree fingerprint
-    if (method is FingerprintingMethod.filetree
-            or method is FingerprintingMethod.histofiletree
-            or method is FingerprintingMethod.combined):
+    if method.requires_filetree_dict():
         if filetree_dictionary is None:
             raise ValueError("Missing filetree w2v dictionary")
         result_fingerprint += __filetree_fingerprint(
             basenames, filetree_dictionary)
 
     # Then the neighbor fingerprint
-    if (method is FingerprintingMethod.neighbor
-            or method is FingerprintingMethod.histoneighbor
-            or method is FingerprintingMethod.combined):
+    if method.requires_neighbor_dict():
         if neighbor_dictionary is None:
             raise ValueError("Missing neighbor w2v dictionary")
         result_fingerprint += __neighbor_fingerprint(
@@ -195,6 +208,12 @@ def changeset_to_fingerprint(changeset: Changeset, method: FingerprintingMethod,
 
     # Then use quantity prediction
     result_fingerprint.predicted_quantity = changeset.predicted_quantity
+
+    # Then add the origin changeset's database ID
+    try:
+        result_fingerprint.cs_db_id = changeset.db_id
+    except AttributeError:
+        result_fingerprint.cs_db_id = None
 
     # All done!
     return result_fingerprint

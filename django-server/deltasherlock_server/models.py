@@ -15,7 +15,7 @@ class EventLabel(models.Model):
     """
     Used to hold "event" (usually an app installation) labels
     """
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255, primary_key=True)
 
     def __str__(self):
         return self.name
@@ -90,7 +90,7 @@ class QueueItem(models.Model):
         self.save()
 
     def __str__(self):
-        return "QI" + str(self.id) + " (Status: " + str(self.status) + ")"
+        return str(self.status) + ": " + str(self.id) + " from " + str(self.client_ip) + " at " + str(self.submission_time)
 
 
 class DeltaSherlockWrapper(models.Model):
@@ -143,7 +143,9 @@ class DeltaSherlockWrapper(models.Model):
 
         :return: the original Changeset or Fingerprint
         """
-        return DSDecoder().decode(self.json_data)
+        obj = DSDecoder().decode(self.json_data)
+        obj.db_id = self.id
+        return obj
 
     class Meta:
         abstract = True
@@ -163,7 +165,7 @@ class ChangesetWrapper(DeltaSherlockWrapper):
         super().wrap(object_to_wrap)
 
     def __str__(self):
-        return "CS" + str(self.id) + ": PQ=" + str(self.predicted_quantity) + " OT=" + str(self.open_time) + " CT=" + str(self.close_time)
+        return "CS" + str(self.id) + " labeled " + str(self.labels) + " (P.Qty: " + str(self.predicted_quantity) + ", CT: " + str(self.close_time) + ")"
 
 
 class FingerprintWrapper(DeltaSherlockWrapper):
@@ -188,11 +190,25 @@ class FingerprintWrapper(DeltaSherlockWrapper):
 
     method = models.IntegerField(
         choices=FINGERPRINTING_METHOD_CHOICES, default=0)
-    origin_changeset = models.ManyToManyField(ChangesetWrapper, blank=True)
+    origin_changeset = models.ForeignKey(
+        ChangesetWrapper, on_delete=models.SET_NULL, null=True, blank=True)
 
     def wrap(self, object_to_wrap):
         self.method = object_to_wrap.method.value
+        try:
+            self.origin_changeset = ChangesetWrapper.objects.get(
+                id=object_to_wrap.cs_db_id)
+        except:
+            # undefined origin changeset
+            pass
         super().wrap(object_to_wrap)
 
+    def unwrap(self):
+        # We have to override the default unwrap() because we need to set the
+        # origin changeset ID
+        obj = super().unwrap()
+        obj.cs_db_id = self.origin_changeset_id
+        return obj
+
     def __str__(self):
-        return "FP" + str(self.id) + ": PQ=" + str(self.predicted_quantity) + " FM=" + str(self.method)
+        return "FP" + str(self.id) + " labeled " + str(self.labels) + " (P.Qty: " + str(self.predicted_quantity) + ", Method: " + str(self.method) + ") originating from CS" + str(self.origin_changeset_id)

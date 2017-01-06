@@ -101,15 +101,15 @@ class DSEncoder(json.JSONEncoder):
             # Rescursively serialize the file change lists
             serializable['creations'] = list()
             for cs_record in o.creations:
-                serializable['creations'].append(default(cs_record))
+                serializable['creations'].append(self.default(cs_record))
 
             serializable['modifications'] = list()
             for cs_record in o.modifications:
-                serializable['modifications'].append(default(cs_record))
+                serializable['modifications'].append(self.default(cs_record))
 
             serializable['deletions'] = list()
             for cs_record in o.deletions:
-                serializable['deletions'].append(default(cs_record))
+                serializable['deletions'].append(self.default(cs_record))
 
         elif (isinstance(o, ChangesetRecord)):
             serializable['type'] = "ChangesetRecord"
@@ -143,6 +143,8 @@ class DSDecoder(json.JSONDecoder):
         :param: obj the newly-deserialized list
         :returns: the corresponding DeltaSherlock object
         """
+        # Check if object is already deserialized
+
         deserialized = None
         #import ipdb; ipdb.set_trace()
         if obj['type'] == "Fingerprint":
@@ -157,18 +159,22 @@ class DSDecoder(json.JSONDecoder):
             deserialized.close_time = obj['close_time']
             deserialized.labels = obj['labels']
             deserialized.predicted_quantity = obj['predicted_quantity']
+            deserialized.creations = obj['creations']
+            deserialized.modifications = obj['modifications']
+            deserialized.deletions = obj['deletions']
 
-            deserialized.creations = list()
-            for cs_record_ser in obj['creations']:
-                deserialized.creations.append(object_hook(cs_record_ser))
-
-            deserialized.modifications = list()
-            for cs_record_ser in obj['modifications']:
-                deserialized.modifications.append(object_hook(cs_record_ser))
-
-            deserialized.deletions = list()
-            for cs_record_ser in obj['deletions']:
-                deserialized.deletions.append(object_hook(cs_record_ser))
+            # deserialized.creations = list()
+            # for cs_record_ser in obj['creations']:
+            #     import ipdb; ipdb.set_trace()
+            #     deserialized.creations.append(self.object_hook(cs_record_ser))
+            #
+            # deserialized.modifications = list()
+            # for cs_record_ser in obj['modifications']:
+            #     deserialized.modifications.append(self.object_hook(cs_record_ser))
+            #
+            # deserialized.deletions = list()
+            # for cs_record_ser in obj['deletions']:
+            #     deserialized.deletions.append(self.object_hook(cs_record_ser))
 
         elif obj['type'] == "ChangesetRecord":
             deserialized = ChangesetRecord(

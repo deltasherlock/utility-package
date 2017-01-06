@@ -16,12 +16,15 @@ class ChangesetRecord(object):
     :attribute mtime: the unix timestamp at which this event occurred
     :attribute neighbors: the "neighbors" of this file (ie. files that also
     exist in the same directory as this one)
+    :attribute db_id: an optional identifier populated when a changeset is
+    "unwrapped" from the database
     """
 
     def __init__(self, filename: str, mtime: int, neighbors: list = None):
         self.filename = filename
         self.mtime = mtime
         self.neighbors = neighbors if neighbors is not None else []
+        self.db_id = None
         return
 
     def filetree_sentence(self) -> list:
