@@ -17,7 +17,9 @@ class FingerprintingMethod(Enum):
     An enumerated type containing representations of each fingerprinting method.
     Notice how adding the integer values of two or more "basic" methods results
     in the appropriate "combination" method. Also, all odd values incorporate a
-    histogram fingerprint, while the evens do not.
+    histogram fingerprint, while the evens do not. This numbering scheme should
+    remain as backward compatible as possible, since these values are used in
+    the server's database (see source for FingerprintWrapper)
     """
     undefined = 0
     histogram = 1
@@ -32,10 +34,16 @@ class FingerprintingMethod(Enum):
 class Fingerprint(np.ndarray):
     """
     A wrapper around a numpy array designed to handle numerical vector
-    representations of changesets.
+    representations of changesets. The best way to instantiate a Fingerprint
+    is by providing a raw numpy array and FingerprintingMethod as parameters
+    (ie. fp = Fingerprint(arr, method=neighbor)), and then manually setting the
+    remaining attributes
 
     :attribute method: the FingerprintingMethod used to create this fingerprint
     :attribute labels: a list of labels contained within this fingerprint
+    :attribute predicted_quantity: the quantity of events (ie an application
+    installation) that probably occurred during the recording interval.
+    Determined by the original Changeset
 
     Adapted from https://docs.scipy.org/doc/numpy/user/basics.subclassing.html
     """

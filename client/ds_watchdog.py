@@ -1,6 +1,6 @@
 # DeltaSherlock. See README.md for usage. See LICENSE for MIT/X11 license info.
 """
-DeltaSherlock client scanning module. Contains methods for analyzing the
+DeltaSherlock client watchdog module. Contains methods for analyzing the
 filesystem and creating changesets.
 """
 # pylint: disable=C0326, R0913
@@ -41,7 +41,9 @@ class DeltaSherlockEventHandler(PatternMatchingEventHandler):
     def replace_changeset(self, new_changeset):
         """
         Swap out the current changeset being recorded to with a new changeset.
-        Return the old, closed changeset
+
+        :param new_changeset: the changeset to be "swapped in" to the watchdog
+        :return: the old, closed changeset that you just replaced
         """
         if not new_changeset.open:
             raise ValueError("Cannot give a closed changeset to event handler")
@@ -82,6 +84,8 @@ class DeltaSherlockWatchdog(object):
         """
         Close the current changeset being recorded to, open a new one, and
         return the former
+
+        :return: the old, closed changeset that was just "ejected"
         """
         latest_changeset = self.__handler.replace_changeset(
             Changeset(time.time()))
@@ -92,6 +96,13 @@ class DeltaSherlockWatchdog(object):
         """
         Returns the sum of all changesets between two indexes (inclusive of
         first, exclusive of last), or just the single changeset specified
+
+        :param first_index: the index of the first changeset you'd like to
+        include
+        :param last_index: the index of the changeset AFTER the last changeset
+        you'd like to include, or None if you only want the changeset specified
+        by first_index
+        :return: the sum of all changesets across the specified range
         """
         sum_changeset = self.__changesets[first_index]
 

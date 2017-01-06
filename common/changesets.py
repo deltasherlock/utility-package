@@ -1,7 +1,7 @@
 # DeltaSherlock. See README.md for usage. See LICENSE for MIT/X11 license info.
 # pylint: disable=W0141,C0326
 """
-DeltaSherlock changeset types
+DeltaSherlock common changeset-related data models.
 """
 from os import listdir
 from os.path import dirname, basename, isfile
@@ -10,7 +10,12 @@ from itertools import chain
 
 class ChangesetRecord(object):
     """
-    Container for an filesystem change record
+    Container for a filesystem change record
+
+    :attribute filename: the full path to the file recorded
+    :attribute mtime: the unix timestamp at which this event occurred
+    :attribute neighbors: the "neighbors" of this file (ie. files that also
+    exist in the same directory as this one)
     """
 
     def __init__(self, filename: str, mtime: int, neighbors: list = None):
@@ -71,7 +76,29 @@ class ChangesetRecord(object):
 class Changeset(object):
     """
     Represents all filesystem changes during a certain interval (between its
-    open_time and close_time)
+    open_time and close_time). It is helpful to think of a changeset as an
+    audio CD-R: it is made to be "loaded" into a "recorder" (DeltaSherlockWatchdog),
+    where it is "opened" for recording events, then "closed" (permanently)
+    when recording has finished, and then is ususally immediately replaced by a
+    fresh "blank" Changeset
+
+    :attribute open_time: the unix timestamp when this changeset began recording
+    events
+    :attribute open: true if the changeset is currently being "written to",
+    false otherwise. Note that you almost always have to close a changeset
+    before you can doing anything useful with it. Always use .close() instead of
+    changing this attribute directly
+    :attribute close_time: the unix timestamp when this changeset stopped
+    recording events
+    :attribute creations: a list of ChangesetRecords representing files created
+    during the recording interval
+    :attribute modifications: a list of ChangesetRecords representing files
+    modified during the recording interval
+    :attribute deleted: a list of ChangesetRecords representing files deleted
+    during the recording interval
+    :attribute predicted_quantity: the quantity of events (ie an application
+    installation) that probably occurred during the recording interval.
+    Determined using histogram analysis upon .close()
     """
 
     def __init__(self, open_time: int):
@@ -116,6 +143,8 @@ class Changeset(object):
         Close changeset, indicating that no further changes should be recorded.
         Then balance the records lists so that temporary files that were created
         and deleted during the interval are not considered "created"
+
+        :param close_time: the unix timestamp of when this changeset was closed
         """
         # First, balance and sort our records
         self.__balance()
@@ -144,6 +173,8 @@ class Changeset(object):
         Produces a list of filetree sentences (which are just lists of words)
         corresponding to all changes within the set. Can only be called after
         changeset is closed
+
+        :return: the list of filetree sentences
         """
         # Only usable once record is closed
         if self.open:
@@ -165,6 +196,8 @@ class Changeset(object):
         Produces a list of neighbor sentences (which are just lists of words)
         corresponding to all changes within the set. Can only be called after
         changeset is closed
+
+        :return: the list of neighbor sentences
         """
         # Only usable once record is closed
         if self.open:
@@ -185,6 +218,8 @@ class Changeset(object):
         """
         Returns a list of basenames of all files changed within the interval,
         duplicates removed. Can only be called after changeset is closed
+
+        :return: the list of basenames
         """
         # Only usable once record is closed
         if self.open:
@@ -204,6 +239,8 @@ class Changeset(object):
     def add_label(self, label: str):
         """
         Labels will most likely be used to store tags for which apps
+
+        :param label: the "name" of the event label (likely an application name)
         """
         self.labels.append(label)
         return
@@ -345,6 +382,9 @@ class Changeset(object):
         """
         Filters a list of changeset records for duplicates, only leaving the
         latest changes behind
+
+        :param records: a list of ChangesetRecords to be filtered
+        :return: the resulting filtered list
         """
         new_records = []
 

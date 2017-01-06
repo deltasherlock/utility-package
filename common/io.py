@@ -10,7 +10,6 @@ import string
 import time
 import json
 import numpy as np
-#from base64 import b64encode, b64decode
 from deltasherlock.common.changesets import Changeset
 from deltasherlock.common.changesets import ChangesetRecord
 from deltasherlock.common.fingerprinting import Fingerprint
@@ -19,9 +18,13 @@ from deltasherlock.common.fingerprinting import FingerprintingMethod
 
 def save_object_as_json(obj: object, save_path: str):
     """
-    Basically saves a text representation of any DeltaSherlock or "pure Python" object to a file.
+    Basically saves a text representation of select DeltaSherlock objects to a file.
     Although less space efficient than a regular binary Pickle file, it allows for
     easier transport via network, and is MUCH less vulnerable to arbitrary code execution attacks.
+
+    :param obj: the object to be saved (supports anything supported by DSEncoder)
+    :param save_path: the full path of the file to be saved (existing files will
+    be overwritten)
     """
     with open(save_path, 'w') as output_file:
         print(DSEncoder().encode(obj), file=output_file)
@@ -30,6 +33,8 @@ def save_object_as_json(obj: object, save_path: str):
 def load_object_from_json(load_path: str) -> object:
     """
     Load a file created by save_object_as_json()
+
+    :param load_path: the full path to the file
     """
     with open(load_path, 'r') as input_file:
         return DSDecoder().decode(input_file.read().replace('\n', ''))
@@ -63,12 +68,14 @@ def random_activity(testdirpath):
 class DSEncoder(json.JSONEncoder):
     """
     Provides some JSON serialization facilities for custom objects used by
-    DeltaSherlock (mainly changesets and fingerprints)
+    DeltaSherlock (currently supports Fingerprints, Changesets, and
+    ChangesetRecords). Ex. Usage: json_str = DSEncoder().encode(my_changeset)
     """
 
     def default(self, o: object):
         """
-        Coverts a given object into a JSON serializable object
+        Coverts a given object into a JSON serializable object. Not to be used
+        directly; instead use .encode()
 
         :param: o the Fingerprint or Changeset to be serialized
         :returns: a JSON serializable object to be processed by the standard Python
@@ -120,7 +127,8 @@ class DSEncoder(json.JSONEncoder):
 class DSDecoder(json.JSONDecoder):
     """
     Provides some JSON deserialization facilities for custom objects used by
-    DeltaSherlock (mainly changesets and fingerprints)
+    DeltaSherlock (currently supports Fingerprints, Changesets, and
+    ChangesetRecords). Ex. Usage: my_changeset = DSDecoder().decode(json_str)
     """
 
     def __init__(self, *args, **kwargs):
@@ -177,10 +185,10 @@ class DSDecoder(json.JSONDecoder):
 # use of Python pickles throughout DeltaSherlock. Pickles from unknown sources
 # are inherently insecure (especially over networks) and should be avoided.
 #
+# from base64 import b64encode, b64decode
 # def object_to_base64(obj: object) -> str:
 #     """
-#     Converts any Pickle-able object to a base64 endcoded string. Good for transport
-#     via network
+#     Converts any Pickle-able object to a base64 endcoded string.
 #     """
 #     return b64encode(pickle.dumps(obj)).decode('UTF-8')
 #

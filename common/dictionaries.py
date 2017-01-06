@@ -1,7 +1,8 @@
+"""
+DeltaSherlock common dictionary-related data models and helpers.
+"""
 import os
 import gensim
-#import logging
-#logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
 
 class SentencesFromDirectory(object):
