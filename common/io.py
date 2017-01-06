@@ -10,44 +10,29 @@ import string
 import time
 import json
 import numpy as np
-from base64 import b64encode, b64decode
+#from base64 import b64encode, b64decode
 from deltasherlock.common.changesets import Changeset
 from deltasherlock.common.changesets import ChangesetRecord
 from deltasherlock.common.fingerprinting import Fingerprint
 from deltasherlock.common.fingerprinting import FingerprintingMethod
 
 
-def object_to_base64(obj: object) -> str:
+def save_object_as_json(obj: object, save_path: str):
     """
-    Converts any Pickle-able object to a base64 endcoded string. Good for transport
-    via network
-    """
-    return b64encode(pickle.dumps(obj)).decode('UTF-8')
-
-
-def base64_to_object(b64_string: str) -> object:
-    """
-    Converts the result of object_to_base64 back to an object.
-    """
-    return pickle.loads(b64decode(b64_string))
-
-
-def save_object_as_base64(obj: object, save_path: str):
-    """
-    Basically saves a text representation of any Pickle-able object to a file.
+    Basically saves a text representation of any DeltaSherlock or "pure Python" object to a file.
     Although less space efficient than a regular binary Pickle file, it allows for
-    easier transport via network
+    easier transport via network, and is MUCH less vulnerable to arbitrary code execution attacks.
     """
     with open(save_path, 'w') as output_file:
-        print(object_to_base64(obj), file=output_file)
+        print(DSEncoder().encode(obj), file=output_file)
 
 
-def load_object_from_base64(load_path: str) -> object:
+def load_object_from_json(load_path: str) -> object:
     """
-    Load a file created by save_object_as_base64()
+    Load a file created by save_object_as_json()
     """
     with open(load_path, 'r') as input_file:
-        return base64_to_object(input_file.read().replace('\n', ''))
+        return DSDecoder().decode(input_file.read().replace('\n', ''))
 
 
 def uid(size=6, chars=string.ascii_uppercase + string.digits):
@@ -133,6 +118,10 @@ class DSEncoder(json.JSONEncoder):
 
 
 class DSDecoder(json.JSONDecoder):
+    """
+    Provides some JSON deserialization facilities for custom objects used by
+    DeltaSherlock (mainly changesets and fingerprints)
+    """
 
     def __init__(self, *args, **kwargs):
         json.JSONDecoder.__init__(
@@ -182,3 +171,38 @@ class DSDecoder(json.JSONDecoder):
             raise ValueError("Unable to determine type of JSON object")
 
         return deserialized
+
+###### BEGIN DEPRECATED CODE #######
+# The following code was deprecated on Jan. 5, 2017 in order to reduce the
+# use of Python pickles throughout DeltaSherlock. Pickles from unknown sources
+# are inherently insecure (especially over networks) and should be avoided.
+#
+# def object_to_base64(obj: object) -> str:
+#     """
+#     Converts any Pickle-able object to a base64 endcoded string. Good for transport
+#     via network
+#     """
+#     return b64encode(pickle.dumps(obj)).decode('UTF-8')
+#
+# def base64_to_object(b64_string: str) -> object:
+#     """
+#     Converts the result of object_to_base64 back to an object.
+#     """
+#     return pickle.loads(b64decode(b64_string))
+#
+# def save_object_as_base64(obj: object, save_path: str):
+#     """
+#     Basically saves a text representation of any Pickle-able object to a file.
+#     Although less space efficient than a regular binary Pickle file, it allows for
+#     easier transport via network
+#     """
+#     with open(save_path, 'w') as output_file:
+#         print(object_to_base64(obj), file=output_file)
+#
+# def load_object_from_base64(load_path: str) -> object:
+#     """
+#     Load a file created by save_object_as_base64()
+#     """
+#     with open(load_path, 'r') as input_file:
+#         return base64_to_object(input_file.read().replace('\n', ''))
+####### END DEPRECATED CODE ########

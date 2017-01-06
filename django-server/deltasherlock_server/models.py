@@ -1,6 +1,6 @@
 from datetime import date
 from django.db import models
-from picklefield.fields import PickledObjectField
+from deltasherlock.common.io import DSEncoder, DSDecoder
 from deltasherlock.common.changesets import Changeset, ChangesetRecord
 from deltasherlock.common.fingerprinting import Fingerprint, FingerprintingMethod
 
@@ -15,14 +15,24 @@ class EventLabel(models.Model):
     def __str__(self):
         return self.name
 
+class QueueItem(models.Model):
+    client_ip = models.GenericIPAddressField(verbose_name="Submitting Client IP")
+    submission_time = models.DateTimeField()
+    endpoint_url = models.URLField()
+    parameters = models.CharField(max_length=255, blank=True)
+    request_text = models.TextField(verbose_name="Full HTTP Resquest Text")
+    rq_id = models.CharField(max_length=50, verbose_name="RQ Job ID")
+    result_labels = models.ManyToManyField(EventLabel, verbose_name="Predicted Labels", blank=True)
+    delivery_time = models.DateTimeField(null=True, blank=True)
+
 class DeltaSherlockWrapper(models.Model):
-    labels = models.ManyToManyField(EventLabel)
+    labels = models.ManyToManyField(EventLabel, blank=True)
     predicted_quantity = models.IntegerField()
-    wrapped_object = PickledObjectField(compress=True)
+    json_data = models.TextField()
 
     def wrap(self, object_to_wrap):
         self.predicted_quantity = object_to_wrap.predicted_quantity
-        self.wrapped_object = object_to_wrap
+        self.json_data = DSEncoder().encode(object_to_wrap)
         self.save()
         #Now that we have an ID, we can add labels
 
@@ -39,13 +49,13 @@ class DeltaSherlockWrapper(models.Model):
                 #Use the existing one if it does
                 event_label = label_qset[0]
 
-            # Add the relationshop
+            # Add the relationship
             self.labels.add(event_label)
 
         self.save()
 
     def unwrap(self):
-        return self.wrapped_object
+        return DSDecoder().decode(self.json_data)
 
     class Meta:
         abstract = True
@@ -65,7 +75,7 @@ class ChangesetWrapper(DeltaSherlockWrapper):
 
 class FingerprintWrapper(DeltaSherlockWrapper):
     method = models.IntegerField()
-    origin_changeset = models.ManyToManyField(ChangesetWrapper)
+    origin_changeset = models.ManyToManyField(ChangesetWrapper, blank=True)
 
     def wrap(self, object_to_wrap):
         super().wrap(object_to_wrap)
