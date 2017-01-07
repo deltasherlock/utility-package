@@ -23,8 +23,7 @@ urlpatterns += [
         name="fingerprint-submit"),
     url(r'^fingerprint/rebuild/$', views.RebuildFingerprints.as_view(),
         name="fingerprint-rebuild"),
-    #url(r'^queue/info/(?P<id>[a-f0-9]{8}-?[a-f0-9]{4}-?4[a-f0-9]{3}-?[89ab][a-f0-9]{3}-?[a-f0-9]{12})/$', views.QueueInfo.as_view()),
-    url(r'^admin/', admin.site.urls),
+    url(r'^admin/', admin.site.urls, name="admin"),
 ]
 
 urlpatterns = format_suffix_patterns(urlpatterns)

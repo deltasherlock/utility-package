@@ -4,7 +4,8 @@ is structured, so you must run "python manage.py makemigrations" and "python
 manage.py migrate" after making any significant changes here.
 """
 import uuid
-from datetime import date
+import pytz
+from datetime import datetime
 from django.db import models
 from deltasherlock.common.io import DSEncoder, DSDecoder
 from deltasherlock.common.changesets import Changeset, ChangesetRecord
@@ -160,8 +161,10 @@ class ChangesetWrapper(DeltaSherlockWrapper):
     close_time = models.DateTimeField()
 
     def wrap(self, object_to_wrap):
-        self.open_time = date.fromtimestamp(object_to_wrap.open_time)
-        self.close_time = date.fromtimestamp(object_to_wrap.close_time)
+        self.open_time = datetime.utcfromtimestamp(
+            object_to_wrap.open_time).replace(tzinfo=pytz.utc)
+        self.close_time = datetime.utcfromtimestamp(
+            object_to_wrap.close_time).replace(tzinfo=pytz.utc)
         super().wrap(object_to_wrap)
 
     def __str__(self):

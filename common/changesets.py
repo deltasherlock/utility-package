@@ -24,7 +24,6 @@ class ChangesetRecord(object):
         self.filename = filename
         self.mtime = mtime
         self.neighbors = neighbors if neighbors is not None else []
-        self.db_id = None
         return
 
     def filetree_sentence(self) -> list:
@@ -72,6 +71,12 @@ class ChangesetRecord(object):
         """
         return self.mtime > other.mtime
 
+    def __eq__(self, other):
+        """
+        Allows checking for total equality
+        """
+        return self.__dict__ == other.__dict__
+
     def __repr__(self):
         return ("<" + self.filename + " at " + str(self.mtime) + ">")
 
@@ -118,6 +123,7 @@ class Changeset(object):
         self.labels = []
 
         self.predicted_quantity = -1
+        self.db_id = None
         return
 
     def add_creation_record(self, filename: str, mtime: int):
@@ -421,6 +427,19 @@ class Changeset(object):
         sum_changeset.close(highest_close_time)
 
         return sum_changeset
+
+    def __eq__(self, other):
+        """
+        Determine equality (ie all IMPORTANT fields are exactly the same)
+        """
+        return (self.open_time == other.open_time
+                and self.open == other.open
+                and self.close_time == other.close_time
+                and self.creations == other.creations
+                and self.modifications == other.modifications
+                and self.deletions == other.deletions
+                and self.labels == other.labels
+                and self.predicted_quantity == other.predicted_quantity)
 
     def __repr__(self):
         return ("<" + ("Open" if self.open else "Closed") + " changeset from " +

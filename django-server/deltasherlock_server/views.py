@@ -6,28 +6,31 @@ within "urls.py"
 """
 import os
 from django.conf import settings
-from django.shortcuts import render
-from deltasherlock.server import manager
-from deltasherlock.common.fingerprinting import FingerprintingMethod
-from deltasherlock_server import models
-from deltasherlock_server import serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.generics import RetrieveAPIView
 from rest_framework.reverse import reverse
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework import viewsets
 from redis import Redis
 from rq import Queue
+from deltasherlock.server import manager
+from deltasherlock.common.fingerprinting import FingerprintingMethod
+from deltasherlock_server import models
+from deltasherlock_server import serializers
 
 
 @api_view(['GET'])
 def api_root(request, format=None):
+    """
+    Home page of the API
+    """
     return Response({
-        'queue': reverse('queueitem-list', request=request, format=format),
-        'labels': reverse('eventlabel-list', request=request, format=format),
-        'fingerprint': reverse('fingerprint-submit', request=request, format=format),
+        'admin': reverse('admin', request=request, format=format),
+        'queueitem-list': reverse('queueitem-list', request=request, format=format),
+        'eventlabel-list': reverse('eventlabel-list', request=request, format=format),
+        'fingerprint-submit': reverse('fingerprint-submit', request=request, format=format),
+        'fingerprint-rebuild': reverse('fingerprint-rebuild', request=request, format=format),
     })
 
 
@@ -43,7 +46,7 @@ class FingerprintSubmit(APIView):
         try:
             q = Queue(connection=Redis())
         except:
-            return Respone("Could not reach Redis", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response("Could not reach Redis", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # Then submit the job to RQ
         rq_job = None
