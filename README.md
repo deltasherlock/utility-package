@@ -9,7 +9,15 @@ This repository contains the DeltaSherlock **utility package**. If you're lookin
 * `client` contains modules used strictly on the client-side, like the `DeltaSherlockWatchdog`
 * `server` contains modules used strictly on the server-side, such as the actual machine learning model prediction code and the job queuing system's `worker.py` script. Note that this package *does not* contain any code defining the RESTful API, admin interface, or other Django related items; those can all be found in [django-server](https://github.com/deltasherlock/django-server/)
 
+## Requirements
+* Linux or macOS (only tested on Ubuntu 16.04, however)
+* Python 3.5+
+* watchdog
+* numpy & scipy
+* sklearn
+
 ## Installation
+_Assuming Ubuntu 14.04 or later. You may have to tweak these commands slightly if you're running some other Linux distro_
 1. Ensure your system's up to date: `sudo apt update && sudo apt upgrade`
 2. Install PIP and ensure it's up to date: `sudo apt install python3-pip && sudo pip3 install --upgrade pip`
 3. Install (or update) dependencies: `sudo pip3 install --upgrade watchdog numpy scipy gensim sklearn`
