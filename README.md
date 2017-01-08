@@ -18,6 +18,7 @@ This repository contains the DeltaSherlock **utility package**. If you're lookin
 
 ## Installation
 _Assuming Ubuntu 14.04 or later. You may have to tweak these commands slightly if you're running some other Linux distro_
+
 1. Ensure your system's up to date: `sudo apt update && sudo apt upgrade`
 2. Install PIP and ensure it's up to date: `sudo apt install python3-pip && sudo pip3 install --upgrade pip`
 3. Install (or update) dependencies: `sudo pip3 install --upgrade watchdog numpy scipy gensim sklearn`
