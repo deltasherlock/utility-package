@@ -41,6 +41,11 @@ class MLModel(object):
         specified MLAlgorithm
         """
         self.method = fingerprints[0].method
+        for fingerprint in fingerprints:
+            if fingerprint.method != self.method:
+                raise ValueError("Models can only be trained with one fingerprinting method at a time")
+
+        self.num_fingerprints = len(fingerprints)
         self.algorithm = algorithm
         if self.algorithm == MLAlgorithm.logistic_regression:
             self.model = LogisticRegression(C=10000)
@@ -96,3 +101,8 @@ class MLModel(object):
             prediction = self.classifier.predict(fingerprint.reshape(1, -1))
 
         return self.binarizer.inverse_transform(prediction)[0]
+
+    def __repr__(self):
+        return ("<" + self.algorithm.name() + " model trained on "
+            + str(self.num_fingerprints) + " " + str(self.method.name())
+            + " fingerprints and " + str(len(set(self.labels))) + " unique labels>")

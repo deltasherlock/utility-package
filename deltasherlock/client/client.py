@@ -1,4 +1,11 @@
 #!/usr/bin/env python3
+#####################################
+#              WARNING!             #
+# This file is just a template!     #
+# It is not actually read by any    #
+# code, so don't expect this do     #
+# anything yet                      #
+#####################################
 # DeltaSherlock. See README.md for usage. See LICENSE for MIT/X11 license info.
 # pylint: disable=C0103
 """

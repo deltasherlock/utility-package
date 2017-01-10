@@ -59,7 +59,11 @@ class DeltaSherlockWatchdog(object):
     Manages the watchdog that monitors the filesystem for changes
     """
 
-    def __init__(self, paths: list, patterns: str, ignore_patterns: bool):
+    def __init__(self, paths: list, patterns: str = "*", ignore_patterns: bool):
+        """
+        See http://pythonhosted.org/watchdog/api.html#watchdog.events.PatternMatchingEventHandler
+        for explanation on the "patterns" parameters
+        """
         # Create changeset infrastructure
         self.__changesets = []
 

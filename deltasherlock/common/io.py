@@ -15,56 +15,6 @@ from deltasherlock.common.changesets import ChangesetRecord
 from deltasherlock.common.fingerprinting import Fingerprint
 from deltasherlock.common.fingerprinting import FingerprintingMethod
 
-
-def save_object_as_json(obj: object, save_path: str):
-    """
-    Basically saves a text representation of select DeltaSherlock objects to a file.
-    Although less space efficient than a regular binary Pickle file, it allows for
-    easier transport via network, and is MUCH less vulnerable to arbitrary code execution attacks.
-
-    :param obj: the object to be saved (supports anything supported by DSEncoder)
-    :param save_path: the full path of the file to be saved (existing files will
-    be overwritten)
-    """
-    with open(save_path, 'w') as output_file:
-        print(DSEncoder().encode(obj), file=output_file)
-
-
-def load_object_from_json(load_path: str) -> object:
-    """
-    Load a file created by save_object_as_json()
-
-    :param load_path: the full path to the file
-    """
-    with open(load_path, 'r') as input_file:
-        return DSDecoder().decode(input_file.read().replace('\n', ''))
-
-
-def uid(size=6, chars=string.ascii_uppercase + string.digits):
-    """
-    Generates a nice short unique ID for random files. For testing
-    """
-    return ''.join(random.choice(chars) for _ in range(size))
-
-
-def random_activity(testdirpath):
-    """
-    Create some random file system activity in a certain folder. For testing
-    """
-    files_created = []
-    for i in range(10):
-        files_created.append(tempfile.mkstemp(
-            dir=testdirpath, suffix=str(uid())))
-    testsubdirpath = os.path.join(testdirpath, str(uid()))
-    os.mkdir(testsubdirpath)
-    time.sleep(1)
-    for i in range(15):
-        files_created.append(tempfile.mkstemp(
-            dir=testsubdirpath, suffix=str(uid())))
-    time.sleep(1)
-    return files_created
-
-
 class DSEncoder(json.JSONEncoder):
     """
     Provides some JSON serialization facilities for custom objects used by
@@ -185,6 +135,55 @@ class DSDecoder(json.JSONDecoder):
             raise ValueError("Unable to determine type of JSON object")
 
         return deserialized
+
+
+def save_object_as_json(obj: object, save_path: str):
+    """
+    Basically saves a text representation of select DeltaSherlock objects to a file.
+    Although less space efficient than a regular binary Pickle file, it allows for
+    easier transport via network, and is MUCH less vulnerable to arbitrary code execution attacks.
+
+    :param obj: the object to be saved (supports anything supported by DSEncoder)
+    :param save_path: the full path of the file to be saved (existing files will
+    be overwritten)
+    """
+    with open(save_path, 'w') as output_file:
+        print(DSEncoder().encode(obj), file=output_file)
+
+
+def load_object_from_json(load_path: str) -> object:
+    """
+    Load a file created by save_object_as_json()
+
+    :param load_path: the full path to the file
+    """
+    with open(load_path, 'r') as input_file:
+        return DSDecoder().decode(input_file.read().replace('\n', ''))
+
+
+def uid(size=6, chars=string.ascii_uppercase + string.digits):
+    """
+    Generates a nice short unique ID for random files. For testing
+    """
+    return ''.join(random.choice(chars) for _ in range(size))
+
+
+def random_activity(testdirpath):
+    """
+    Create some random file system activity in a certain folder. For testing
+    """
+    files_created = []
+    for i in range(10):
+        files_created.append(tempfile.mkstemp(
+            dir=testdirpath, suffix=str(uid())))
+    testsubdirpath = os.path.join(testdirpath, str(uid()))
+    os.mkdir(testsubdirpath)
+    time.sleep(1)
+    for i in range(15):
+        files_created.append(tempfile.mkstemp(
+            dir=testsubdirpath, suffix=str(uid())))
+    time.sleep(1)
+    return files_created
 
 ###### BEGIN DEPRECATED CODE #######
 # The following code was deprecated on Jan. 5, 2017 in order to reduce the
