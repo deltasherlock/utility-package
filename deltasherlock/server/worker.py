@@ -3,7 +3,7 @@ Contains methods to be executed via an RQ queue
 """
 
 
-def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, parameters: dict, django_params: dict = None) -> list:
+def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, client_ip: str, parameters: dict, django_params: dict = None) -> list:
     import pickle
     from deltasherlock.common.io import DSDecoder
     from deltasherlock.common.fingerprinting import Fingerprint
@@ -15,6 +15,24 @@ def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, parameters
     model = pickle.load(open(model_path, "rb"))
 
     # TODO notify the endpoint IP!
+    if endpoint_url is not None:
+        import re
+        # Borrowed from Django's URLValidator
+        urlregex = re.compile(
+            r'^(?:http|ftp)s?://' # http:// or https://
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
+            r'localhost|' #localhost...
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+            r'(?::\d+)?' # optional port
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        #If url is valid
+        if urlregex.fullmatch(endpoint_url) is not None:
+            from time import time
+            from requests import post
+            post_data = {'done_time' : time(),
+                         'client_ip' : client_ip,
+                         'prediction' : prediction}
+            post(endpoint_url, json = post_data)
 
     prediction = model.predict(fingerprint)
 
