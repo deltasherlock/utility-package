@@ -14,6 +14,8 @@ def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, client_ip:
     model_path = "/tmp/DS_MLModel"  # + str(int(fingerprint.method))
     model = pickle.load(open(model_path, "rb"))
 
+    prediction = model.predict(fingerprint)
+
     # TODO notify the endpoint IP!
     if endpoint_url is not None:
         import re
@@ -33,8 +35,6 @@ def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, client_ip:
                          'client_ip' : client_ip,
                          'prediction' : prediction}
             post(endpoint_url, json = post_data)
-
-    prediction = model.predict(fingerprint)
 
     print(str(prediction))
 
