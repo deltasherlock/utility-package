@@ -70,12 +70,17 @@ class MLModel(object):
         self.binarizer = preprocessing.MultiLabelBinarizer()
 
         # Creates list of labels, in order
+        # __labels is a list of lists of labels (one list per fp)
+        self.__labels = []
+        # labels is just a "flattened" version of above
         self.labels = []
+
         for fingerprint in fingerprints:
-            self.labels.append(fingerprint.labels)
+            self.__labels.append(fingerprint.labels)
+            self.labels += fingerprint.labels
 
         X = np.nan_to_num(np.array(fingerprints))
-        y = self.binarizer.fit_transform(self.labels)
+        y = self.binarizer.fit_transform(self.__labels)
         self.classifier.fit(X, y)
 
     def predict(self, fingerprint: Fingerprint):
@@ -103,6 +108,7 @@ class MLModel(object):
         return self.binarizer.inverse_transform(prediction)[0]
 
     def __repr__(self):
-        return ("<" + self.algorithm.name() + " model trained on "
-            + str(self.num_fingerprints) + " " + str(self.method.name())
+
+        return ("<" + self.algorithm.name + " model trained on "
+            + str(self.num_fingerprints) + " " + self.method.name
             + " fingerprints and " + str(len(set(self.labels))) + " unique labels>")
