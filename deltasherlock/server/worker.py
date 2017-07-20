@@ -9,6 +9,25 @@ def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, client_ip:
     from deltasherlock.common.fingerprinting import Fingerprint
     from deltasherlock.server.learning import MLModel, MLAlgorithm
 
+    error = None
+
+    # First, dial into Django to update our QueueItem to the Running state
+    if django_params is not None:
+        import os
+        import sys
+        import django
+        from rq import get_current_job
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE",
+                              django_params['settings_module'])
+        sys.path.append(django_params['proj_path'])
+        os.chdir(django_params['proj_path'])
+        django.setup()
+        from deltasherlock_server.models import QueueItem
+
+        # Now we have access to the database, so get the QueueItem
+        q = QueueItem.objects.get(rq_id=get_current_job().id)
+        q.rq_running()
+
     # Basically, we have to load the model from file and predict against it
     fingerprint = DSDecoder().decode(fingerprint_json_str)
     model_path = "/tmp/DS_MLModel"  # + str(int(fingerprint.method))
@@ -38,24 +57,12 @@ def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, client_ip:
                 post(endpoint_url, json = post_data)
             except:
                 print("Error: Could not connect to endpoint_url")
+                error = "Failed to connect to endpoint_url"
 
     print(str(prediction))
 
     # Now we have to dial back into Django to update the database
     if django_params is not None:
-        import os
-        import sys
-        import django
-        from rq import get_current_job
-        os.environ.setdefault("DJANGO_SETTINGS_MODULE",
-                              django_params['settings_module'])
-        sys.path.append(django_params['proj_path'])
-        os.chdir(django_params['proj_path'])
-        django.setup()
-        from deltasherlock_server.models import QueueItem
-
-        # Now we have access to the database, so get the QueueItem
-        q = QueueItem.objects.get(rq_id=get_current_job().id)
-        q.rq_complete(prediction)
+        q.rq_complete(labels=prediction, error=error)
 
     return(prediction)
