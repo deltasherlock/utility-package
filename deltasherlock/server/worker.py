@@ -34,7 +34,10 @@ def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, client_ip:
             post_data = {'done_time' : time(),
                          'client_ip' : client_ip,
                          'prediction' : prediction}
-            post(endpoint_url, json = post_data)
+            try:
+                post(endpoint_url, json = post_data)
+            except:
+                print("Error: Could not connect to endpoint_url")
 
     print(str(prediction))
 
