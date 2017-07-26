@@ -24,4 +24,4 @@ def submit_fingerprint(fingerprint: Fingerprint, endpoint_url: str, parameters: 
     data = {'fingerprint': DSEncoder().encode(fingerprint),
             'endpoint_url': endpoint_url,
             'parameters': parameters}
-    return post(SERVER_URL + "/fingerprint/submit/", data=data)
+    return post(SERVER_URL + "/fingerprint/submit/", json=data)

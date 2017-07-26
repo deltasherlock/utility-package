@@ -144,4 +144,5 @@ def generate_fingerprints(changesets: list, method: fp.FingerprintingMethod, sav
     if neighbor_dict is not None:
         neighbor_dict.save(save_path + "/neighbor.dsdc")
 
+    
     return fingerprints
