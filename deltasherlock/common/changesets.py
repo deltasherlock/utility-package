@@ -47,7 +47,8 @@ class ChangesetRecord(object):
         """
         try:
             excluded_entries = [basename(self.filename), ".", ".."]
-            files = [f for f in listdir(dirname(self.filename)) if isfile(f)]
+            parent = dirname(self.filename)
+            files = [f for f in listdir(parent) if isfile(parent + '/' + f)]
             self.neighbors = list(set(files) - set(excluded_entries))
         except:
             raise IOError("Neighors could not be obtained")
@@ -134,7 +135,7 @@ class Changeset(object):
 
         filesize = None
         try:
-            filesize=getsize(filename)
+            filesize = getsize(filename)
         except:
             # file was probably deleted too quickly
             pass
@@ -146,9 +147,9 @@ class Changeset(object):
         if not self.open:
             raise ValueError("Cannot modify closed Changeset")
 
-        filesize=None
+        filesize = None
         try:
-            filesize=getsize(filename)
+            filesize = getsize(filename)
         except:
             # file was probably deleted too quickly
             pass
