@@ -4,7 +4,7 @@
 DeltaSherlock common changeset-related data models.
 """
 from os import listdir
-from os.path import dirname, basename, isfile
+from os.path import dirname, basename, isfile, getsize
 from itertools import chain
 
 
@@ -16,14 +16,14 @@ class ChangesetRecord(object):
     :attribute mtime: the unix timestamp at which this event occurred
     :attribute neighbors: the "neighbors" of this file (ie. files that also
     exist in the same directory as this one)
-    :attribute db_id: an optional identifier populated when a changeset is
-    "unwrapped" from the database
+    :attribute filesize: the size of the file in bytes
     """
 
-    def __init__(self, filename: str, mtime: int, neighbors: list = None):
+    def __init__(self, filename: str, mtime: int, neighbors: list = None, filesize: int = None):
         self.filename = filename
         self.mtime = mtime
         self.neighbors = neighbors if neighbors is not None else []
+        self.filesize = filesize
         return
 
     def filetree_sentence(self) -> list:
@@ -107,6 +107,8 @@ class Changeset(object):
     :attribute predicted_quantity: the quantity of events (ie an application
     installation) that probably occurred during the recording interval.
     Determined using histogram analysis upon .close()
+    :attribute db_id: an optional identifier populated when a changeset is
+    "unwrapped" from the database
     """
 
     def __init__(self, open_time: int):
@@ -130,14 +132,28 @@ class Changeset(object):
         if not self.open:
             raise ValueError("Cannot modify closed Changeset")
 
-        self.creations.append(ChangesetRecord(filename, mtime))
+        filesize = None
+        try:
+            filesize=getsize(filename)
+        except:
+            # file was probably deleted too quickly
+            pass
+
+        self.creations.append(ChangesetRecord(filename, mtime, filesize=filesize))
         return
 
     def add_modification_record(self, filename: str, mtime: int):
         if not self.open:
             raise ValueError("Cannot modify closed Changeset")
 
-        self.modifications.append(ChangesetRecord(filename, mtime))
+        filesize=None
+        try:
+            filesize=getsize(filename)
+        except:
+            # file was probably deleted too quickly
+            pass
+
+        self.modifications.append(ChangesetRecord(filename, mtime, filesize=filesize))
         return
 
     def add_deletion_record(self, filename: str, mtime: int):

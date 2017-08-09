@@ -64,6 +64,7 @@ class DSEncoder(json.JSONEncoder):
         elif (isinstance(o, ChangesetRecord)):
             serializable['type'] = "ChangesetRecord"
             serializable['filename'] = o.filename
+            serializable['filesize'] = o.filesize
             serializable['mtime'] = o.mtime
             serializable['neighbors'] = o.neighbors
 
