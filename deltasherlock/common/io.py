@@ -15,6 +15,7 @@ from deltasherlock.common.changesets import ChangesetRecord
 from deltasherlock.common.fingerprinting import Fingerprint
 from deltasherlock.common.fingerprinting import FingerprintingMethod
 
+
 class DSEncoder(json.JSONEncoder):
     """
     Provides some JSON serialization facilities for custom objects used by
