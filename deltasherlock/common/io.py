@@ -129,7 +129,7 @@ class DSDecoder(json.JSONDecoder):
 
         elif obj['type'] == "ChangesetRecord":
             deserialized = ChangesetRecord(
-                obj['filename'], obj['mtime'], obj['neighbors'])
+                obj['filename'], obj['mtime'], obj['neighbors'], obj['filesize'])
 
         else:
             # Give up
