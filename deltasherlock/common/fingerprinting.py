@@ -176,7 +176,7 @@ def changeset_to_fingerprint(changeset: Changeset, method: FingerprintingMethod,
     # First, a few sanity checks
     if changeset.open:
         raise ValueError("Cannot convert an open changeset to a fingerprint")
-    if method is FingerprintingMethod.undefined:
+    if method == FingerprintingMethod.undefined:
         raise ValueError(
             "Cannot create a fingerprint with an undefined creation method")
 
@@ -243,7 +243,7 @@ def __histogram_fingerprint(basenames: list, num_bins: int=200) -> Fingerprint:
     bin_size = int((max_bin - min_bin) / (int(num_bins) - 1))
     ybin = ybin + list(range(min_bin, max_bin - bin_size, bin_size))
     ybin.append(10000)
-    if ele_num is 0:
+    if ele_num == 0:
         ele_num = 1
     raw_histogram = np.histogram(ascii_sum_vector, bins=ybin)[0]
     normalized_histogram = raw_histogram * 1.0 / ele_num   # Normalized hist

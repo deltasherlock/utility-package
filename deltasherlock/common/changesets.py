@@ -323,10 +323,10 @@ class Changeset(object):
                 if empty_count == 3:
                     flag = False
 
-            if lastFlag is False and flag is True:
+            if flag and not lastFlag:
                 clusters += 1
                 cluster_begin = index
-            if lastFlag is True and flag is False:
+            if lastFlag and not flag:
                 cluster_end = index
                 cluster_list.append((cluster_begin, cluster_end))
 

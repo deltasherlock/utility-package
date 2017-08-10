@@ -92,15 +92,15 @@ def init_logging(location, level):
     if location is None:
         # Disable Logging (Quiet Mode)
         logging.getLogger().disabled = True
-    elif location is "syslog":
+    elif location == "syslog":
         # Log to Syslog
-        if sys.platform is 'darwin':
+        if sys.platform == 'darwin':
             # Hack for macOS
             syslog = SysLogHandler(address='/var/run/syslog')
         else:
             syslog = SysLogHandler(address='/dev/log')
         logging.basicConfig(level=level, handlers=[syslog])
-    elif location is "stdout":
+    elif location == "stdout":
         # Log to standard output
         logging.basicConfig(level=level)
     else:
