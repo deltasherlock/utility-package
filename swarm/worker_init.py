@@ -21,7 +21,8 @@ networking.swarm_submit_log(log=log, log_type='NT')
 log = gethostname() + " attached RQ workers to the following queues:\n"
 log_type = 'NT'
 for queue in queues:
-    run_res = run("rq worker --url http://redis.v-m.tech:6379 " + queue + " &", shell=True)
+    run_res = run("nohup rq worker --url http://redis.v-m.tech:6379 " + queue + " &",
+                  shell=True)
     log += queue + " at " + str(time()) + " (RC: " + str(run_res.returncode) + ")\n"
 
     if run_res.returncode != 0:
