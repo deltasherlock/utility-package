@@ -11,6 +11,7 @@ def install_eventlabel(eventlabel_dict: dict):
     """
     import os
     import stat
+    import subprocess
     from tempfile import NamedTemporaryFile
     from deltasherlock.client import networking
     from deltasherlock.client.ds_watchdog import DeltaSherlockWatchdog
@@ -19,24 +20,26 @@ def install_eventlabel(eventlabel_dict: dict):
     watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/",
                    "/run/", "/sbin/", "/snap/", "/srv/", "/usr/", "/var/"]
 
-    with NamedTemporaryFile(mode='w+b') as tempf:
+    with NamedTemporaryFile(mode='w', delete=False) as tempf:
         # Save the install script to a tmp file
         print(eventlabel_dict['install_script'], file=tempf)
         # Change the temp file to make it executable
         os.fchmod(tempf.fileno(), stat.S_IRUSR | stat.S_IEXEC)
-        # Begin recording by instantiating the watchdog
-        dswd = ds_watchdog.DeltaSherlockWatchdog(watch_paths)
+        fname = tempf.name
 
-        # Run the command!
-        install_result = subprocess.run(args=tempf.name,
-                                        shell=True,
-                                        stdout=subproces.PIPE,
-                                        stderr=subprocess.STDOUT,
-                                        encoding='UTF-8')
+    # Begin recording by instantiating the watchdog
+    os.sync()
+    dswd = DeltaSherlockWatchdog(watch_paths)
 
-        # Now eject the changeset and stop the watchdog
-        changeset = dswd.mark()
-        del dswd
+    # Run the command!
+    install_result = subprocess.run(args="bash " + fname,
+                                    shell=True,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+
+    # Now eject the changeset and stop the watchdog
+    changeset = dswd.mark()
+    del dswd
 
     changeset.add_label(eventlabel_dict['id'])
 
@@ -44,7 +47,7 @@ def install_eventlabel(eventlabel_dict: dict):
     cs_req = networking.swarm_submit_changeset(changeset)
 
     # Now submit the swarm member log to the API
-    networking.swarm_submit_log(install_result.stdout, cs_req.json()['url'])
+    networking.swarm_submit_log(install_result.stdout.decode("utf-8"), cs_req.json()['url'])
 
 
 def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, client_ip: str, parameters: dict, django_params: dict = None) -> list:
