@@ -3,7 +3,54 @@ Contains methods to be executed via an RQ queue
 """
 
 
+def install_eventlabel(eventlabel_dict: dict):
+    """
+    TODO: Executes the install_script within an EventLabel while recording a changeset
+
+    :param eventlabel_dict: the EventLabel.__dict__ of the EventLabel to be installed
+    """
+    import os
+    import stat
+    from tempfile import NamedTemporaryFile
+    from deltasherlock.client import networking
+    from deltasherlock.client.ds_watchdog import DeltaSherlockWatchdog
+
+    # TODO: make this a setting?
+    watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/",
+                   "/run/", "/sbin/", "/snap/", "/srv/", "/usr/", "/var/"]
+
+    with NamedTemporaryFile(mode='w+b') as tempf:
+        # Save the install script to a tmp file
+        print(eventlabel_dict['install_script'], file=tempf)
+        # Change the temp file to make it executable
+        os.fchmod(tempf.fileno(), stat.S_IRUSR | stat.S_IEXEC)
+        # Begin recording by instantiating the watchdog
+        dswd = ds_watchdog.DeltaSherlockWatchdog(watch_paths)
+
+        # Run the command!
+        install_result = subprocess.run(args=tempf.name,
+                                        shell=True,
+                                        stdout=subproces.PIPE,
+                                        stderr=subprocess.STDOUT,
+                                        encoding='UTF-8')
+
+        # Now eject the changeset and stop the watchdog
+        changeset = dswd.mark()
+        del dswd
+
+    changeset.add_label(eventlabel_dict['id'])
+
+    # Now submit the changeset to the API
+    cs_req = networking.swarm_submit_changeset(changeset)
+
+    # Now submit the swarm member log to the API
+    networking.swarm_submit_log(install_result.stdout, cs_req.json()['url'])
+
+
 def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, client_ip: str, parameters: dict, django_params: dict = None) -> list:
+    """
+    Accepts fingerprints from the API and produces a prediction
+    """
     import pickle
     from time import time
     from deltasherlock.common.io import DSDecoder

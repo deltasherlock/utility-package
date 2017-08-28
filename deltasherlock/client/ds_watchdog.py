@@ -5,6 +5,7 @@ filesystem and creating changesets.
 """
 # pylint: disable=C0326, R0913
 import time
+from os import path
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
 from deltasherlock.common.changesets import Changeset
@@ -73,8 +74,13 @@ class DeltaSherlockWatchdog(object):
                                                    ignore_patterns=ignore_patterns,
                                                    ignore_directories=True,
                                                    case_sensitive=False)
-        for path in paths:
-            self.__observer.schedule(self.__handler, path, recursive=True)
+        for p in paths:
+            if path.isfile(p) or path.isdir(p):
+                self.__observer.schedule(self.__handler, p, recursive=True)
+            else:
+                # Path does not exist.
+                # TODO: throw warning?
+                pass
         self.__observer.start()
         return
 
