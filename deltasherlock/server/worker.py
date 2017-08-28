@@ -5,7 +5,7 @@ Contains methods to be executed via an RQ queue
 
 def install_eventlabel(eventlabel_dict: dict):
     """
-    TODO: Executes the install_script within an EventLabel while recording a changeset
+    Executes the install_script within an EventLabel while recording a changeset
 
     :param eventlabel_dict: the EventLabel.__dict__ of the EventLabel to be installed
     """
@@ -41,6 +41,10 @@ def install_eventlabel(eventlabel_dict: dict):
     changeset = dswd.mark()
     del dswd
 
+    # Delete the tmp file
+    os.remove(fname)
+
+    # Add the id of this event label as a regular changeset label
     changeset.add_label(eventlabel_dict['id'])
 
     # Now submit the changeset to the API
