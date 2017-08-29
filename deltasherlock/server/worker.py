@@ -17,7 +17,7 @@ def install_eventlabel(eventlabel_dict: dict):
     from deltasherlock.client import networking
     from deltasherlock.client.ds_watchdog import DeltaSherlockWatchdog
 
-    install_log = "----Event "+eventlabel_dict['name']+" started at "+str(time)+"----\n"
+    install_log = "----Event "+eventlabel_dict['name']+" started at "+str(time())+"----\n"
     # TODO: make this a setting?
     watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/",
                    "/run/", "/sbin/", "/snap/", "/srv/", "/usr/", "/var/"]
@@ -48,7 +48,7 @@ def install_eventlabel(eventlabel_dict: dict):
 
     # Append some information
     install_log += install_result.stdout.decode("utf-8")
-    install_log += "\n---Event returned code "+ str(install_result.returncode)+" at "+str(time)+"----"
+    install_log += "\n---Event returned code "+ str(install_result.returncode)+" at "+str(time())+"----"
 
     # Make sure this install was successful
     if "E: Could not get lock /" in install_log or "0 upgraded, 0 newly installed, 0 to remove" in install_log:
@@ -65,6 +65,60 @@ def install_eventlabel(eventlabel_dict: dict):
 
     # Now submit the swarm member log to the API
     networking.swarm_submit_log(install_log, cs_req.json()['url'])
+
+
+def install_eventlabel_unsupervised(eventlabel_dict: dict):
+    """
+    Executes the install_script within an EventLabel without caring about recording
+
+    :param eventlabel_dict: the EventLabel.__dict__ of the EventLabel to be installed
+    """
+    import os
+    import stat
+    import subprocess
+    from time import time
+    from tempfile import NamedTemporaryFile
+    from deltasherlock.client import networking
+
+    install_log = "----Event "+eventlabel_dict['name']+" started at "+str(time())+"----\n"
+
+
+    with NamedTemporaryFile(mode='w', delete=False) as tempf:
+        # Save the install script to a tmp file
+        print(eventlabel_dict['install_script'], file=tempf)
+        # Change the temp file to make it executable
+        os.fchmod(tempf.fileno(), stat.S_IRUSR | stat.S_IEXEC)
+        fname = tempf.name
+
+    os.sync()
+
+    # Run the command!
+    install_result = subprocess.run(args="bash " + fname,
+                                    shell=True,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+
+    # Delete the tmp file
+    os.remove(fname)
+
+    # Append some information
+    install_log += install_result.stdout.decode("utf-8")
+    install_log += "\n---Event returned code "+ str(install_result.returncode)+" at "+str(time())+"----"
+
+    # Make sure this install was successful
+    if "E: Could not get lock /" in install_log or "0 upgraded, 0 newly installed, 0 to remove" in install_log:
+        install_log += "\nError detected. Rebooting swarm member"
+        networking.swarm_submit_log(install_log, log_type="ER")
+        os.system('reboot')
+        raise Exception("Installation failed due to apt")
+
+    # Now submit the swarm member log to the API
+    try:
+        networking.swarm_submit_log(install_log)
+    except:
+        # Unsupervised tasks aren't actually that important, so if the log post fails
+        # it's nbd
+        pass
 
 
 def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, client_ip: str, parameters: dict, django_params: dict = None) -> list:
