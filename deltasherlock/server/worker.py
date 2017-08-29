@@ -12,10 +12,12 @@ def install_eventlabel(eventlabel_dict: dict):
     import os
     import stat
     import subprocess
+    from time import time
     from tempfile import NamedTemporaryFile
     from deltasherlock.client import networking
     from deltasherlock.client.ds_watchdog import DeltaSherlockWatchdog
 
+    install_log = "----Event "+eventlabel_dict['name']+" started at "+str(time)+"----\n"
     # TODO: make this a setting?
     watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/",
                    "/run/", "/sbin/", "/snap/", "/srv/", "/usr/", "/var/"]
@@ -44,6 +46,17 @@ def install_eventlabel(eventlabel_dict: dict):
     # Delete the tmp file
     os.remove(fname)
 
+    # Append some information
+    install_log += install_result.stdout.decode("utf-8")
+    install_log += "\n---Event returned code "+ str(install_result.returncode)+" at "+str(time)+"----"
+
+    # Make sure this install was successful
+    if "E: Could not get lock /" in install_log or "0 upgraded, 0 newly installed, 0 to remove" in install_log:
+        install_log += "\nError detected. Rebooting swarm member"
+        networking.swarm_submit_log(install_log, log_type="ER")
+        os.system('reboot')
+        raise Exception("Installation failed due to apt")
+
     # Add the id of this event label as a regular changeset label
     changeset.add_label(eventlabel_dict['id'])
 
@@ -51,7 +64,7 @@ def install_eventlabel(eventlabel_dict: dict):
     cs_req = networking.swarm_submit_changeset(changeset)
 
     # Now submit the swarm member log to the API
-    networking.swarm_submit_log(install_result.stdout.decode("utf-8"), cs_req.json()['url'])
+    networking.swarm_submit_log(install_log, cs_req.json()['url'])
 
 
 def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, client_ip: str, parameters: dict, django_params: dict = None) -> list:
