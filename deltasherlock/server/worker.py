@@ -52,9 +52,8 @@ def install_eventlabel(eventlabel_dict: dict):
 
     # Make sure this install was successful
     if "E: Could not get lock /" in install_log or "0 upgraded, 0 newly installed, 0 to remove" in install_log:
-        install_log += "\nError detected. Rebooting swarm member"
+        install_log += "\nError detected."
         networking.swarm_submit_log(install_log, log_type="ER")
-        os.system('reboot')
         raise Exception("Installation failed due to apt")
 
     # Add the id of this event label as a regular changeset label
@@ -107,9 +106,8 @@ def install_eventlabel_unsupervised(eventlabel_dict: dict):
 
     # Make sure this install was successful
     if "E: Could not get lock /" in install_log or "0 upgraded, 0 newly installed, 0 to remove" in install_log:
-        install_log += "\nError detected. Rebooting swarm member"
+        install_log += "\nError detected."
         networking.swarm_submit_log(install_log, log_type="ER")
-        os.system('reboot')
         raise Exception("Installation failed due to apt")
 
     # Now submit the swarm member log to the API
