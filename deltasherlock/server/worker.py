@@ -105,10 +105,10 @@ def install_eventlabel_unsupervised(eventlabel_dict: dict):
     install_log += "\n---Event returned code "+ str(install_result.returncode)+" at "+str(time())+"----"
 
     # Make sure this install was successful
-    if "E: Could not get lock /" in install_log or "0 upgraded, 0 newly installed, 0 to remove" in install_log:
+    if "E: Could not get lock /" in install_log:
         install_log += "\nError detected."
         networking.swarm_submit_log(install_log, log_type="ER")
-        raise Exception("Installation failed due to apt")
+        raise Exception("Installation failed due to apt lock")
 
     # Now submit the swarm member log to the API
     try:
