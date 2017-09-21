@@ -13,14 +13,20 @@ def install_eventlabel(eventlabel_dict: dict):
     import stat
     import subprocess
     from time import time
+    from platform import linux_distribution
     from tempfile import NamedTemporaryFile
     from deltasherlock.client import networking
     from deltasherlock.client.ds_watchdog import DeltaSherlockWatchdog
 
-    install_log = "----Event "+eventlabel_dict['name']+" started at "+str(time())+"----\n"
+    install_log = "----Event " + eventlabel_dict['name'] + " started at " + str(time()) + "----\n"
     # TODO: make this a setting?
-    watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/",
-                   "/run/", "/sbin/", "/snap/", "/srv/", "/usr/", "/var/"]
+
+    if linux_distribution()[0] == "Ubuntu":
+        watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/",
+                       "/run/", "/sbin/", "/snap/", "/srv/", "/usr/", "/var/"]
+    else:
+        watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/",
+                       "/run/", "/sbin/", "/srv/", "/usr/", "/var/"]
 
     with NamedTemporaryFile(mode='w', delete=False) as tempf:
         # Save the install script to a tmp file
@@ -48,13 +54,14 @@ def install_eventlabel(eventlabel_dict: dict):
 
     # Append some information
     install_log += install_result.stdout.decode("utf-8")
-    install_log += "\n---Event returned code "+ str(install_result.returncode)+" at "+str(time())+"----"
+    install_log += "\n---Event returned code " + \
+        str(install_result.returncode) + " at " + str(time()) + "----"
 
     # Make sure this install was successful
-    if "E: Could not get lock /" in install_log or "0 upgraded, 0 newly installed, 0 to remove" in install_log:
+    if "E: Could not get lock /" in install_log or "0 upgraded, 0 newly installed, 0 to remove" in install_log or "Error: Nothing to do" in install_log:
         install_log += "\nError detected."
         networking.swarm_submit_log(install_log, log_type="ER")
-        raise Exception("Installation failed due to apt")
+        raise Exception("Installation failed due to apt/yum")
 
     # Add the id of this event label as a regular changeset label
     changeset.add_label(eventlabel_dict['id'])
@@ -79,8 +86,7 @@ def install_eventlabel_unsupervised(eventlabel_dict: dict):
     from tempfile import NamedTemporaryFile
     from deltasherlock.client import networking
 
-    install_log = "----Event "+eventlabel_dict['name']+" started at "+str(time())+"----\n"
-
+    install_log = "----Event " + eventlabel_dict['name'] + " started at " + str(time()) + "----\n"
 
     with NamedTemporaryFile(mode='w', delete=False) as tempf:
         # Save the install script to a tmp file
@@ -102,13 +108,18 @@ def install_eventlabel_unsupervised(eventlabel_dict: dict):
 
     # Append some information
     install_log += install_result.stdout.decode("utf-8")
-    install_log += "\n---Event returned code "+ str(install_result.returncode)+" at "+str(time())+"----"
+    install_log += "\n---Event returned code " + \
+        str(install_result.returncode) + " at " + str(time()) + "----"
 
     # Make sure this install was successful
     if "E: Could not get lock /" in install_log:
         install_log += "\nError detected."
         networking.swarm_submit_log(install_log, log_type="ER")
         raise Exception("Installation failed due to apt lock")
+    elif "Error: Nothing to do" in install_log:
+        install_log += "\nError detected."
+        networking.swarm_submit_log(install_log, log_type="ER")
+        raise Exception("Installation failed due to yum")
 
     # Now submit the swarm member log to the API
     try:
