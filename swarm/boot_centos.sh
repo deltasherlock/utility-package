@@ -10,7 +10,7 @@ package-cleanup --cleandupes -y
 cd /root/utility-package/swarm
 
 # Remove any lingering packages from the list
-yum remove -y $(grep -vE "^\s*#" repo_packages_centos.lst  | tr "\n" " ")
+yum remove -C -y --setopt=clean_requirements_on_remove=0 $(grep -vE "^\s*#" repo_packages_centos.lst  | tr "\n" " ")
 
 # Update source code
 git pull
