@@ -36,8 +36,7 @@ class DeltaSherlockEventHandler(PatternMatchingEventHandler):
     def on_moved(self, event):
         # Treated as a deletion of the source and a creation of the destination
         self.current_changeset.add_deletion_record(event.src_path, time.time())
-        self.current_changeset.add_deletion_record(
-            event.dest_path, time.time())
+        self.current_changeset.add_creation_record(event.dest_path, time.time())
 
     def replace_changeset(self, new_changeset):
         """
