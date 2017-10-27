@@ -27,6 +27,17 @@ class SentencesFromFile(object):
         for line in open(os.path.abspath(self.filename)):
             yield line.split()
 
+class SentencesFromDict(object):
+    """Create an iterable object from a dictionary-like object that has a """
+
+    def __init__(self, dictionary):
+        self.dictionary = dictionary
+
+    def __iter__(self):
+        for key, value in self.dictionary.items():
+            for sentence in value:
+                yield sentence
+
 
 def create_dictionary(sentences, threads=4):
     """

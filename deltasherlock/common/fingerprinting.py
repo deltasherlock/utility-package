@@ -128,7 +128,7 @@ class Fingerprint(np.ndarray):
         # First, concatenate the underlying numpy arrays together
         sum_fp = Fingerprint(np.concatenate([self, other]))
 
-        if self.method != other.method:
+        if self.method.value != other.method.value:
             # Then, try to combine the FingerprintingMethod types
             try:
                 sum_fp.method = FingerprintingMethod(
