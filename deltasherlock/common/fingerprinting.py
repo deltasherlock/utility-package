@@ -187,20 +187,20 @@ def changeset_to_fingerprint(changeset: Changeset, method: FingerprintingMethod,
     # Then generate a histogram fingerprint
     if method.value % 2 == 1:
         # All odd methods contain a histogram
-        result_fingerprint += __histogram_fingerprint(basenames)
+        result_fingerprint = result_fingerprint + __histogram_fingerprint(basenames)
 
     # Then generate a filetree fingerprint
     if method.requires_filetree_dict():
         if filetree_dictionary is None:
             raise ValueError("Missing filetree w2v dictionary")
-        result_fingerprint += __filetree_fingerprint(
+        result_fingerprint = result_fingerprint + __filetree_fingerprint(
             basenames, filetree_dictionary)
 
     # Then the neighbor fingerprint
     if method.requires_neighbor_dict():
         if neighbor_dictionary is None:
             raise ValueError("Missing neighbor w2v dictionary")
-        result_fingerprint += __neighbor_fingerprint(
+        result_fingerprint = result_fingerprint + __neighbor_fingerprint(
             basenames, neighbor_dictionary)
 
     # Then add the labels

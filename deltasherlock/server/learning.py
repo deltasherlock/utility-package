@@ -35,12 +35,15 @@ class MLModel(object):
     Container for items needed to machine learn
     """
 
-    def __init__(self, fingerprints: list, algorithm: MLAlgorithm):
+    def __init__(self, fingerprints: list, algorithm: MLAlgorithm, method=None):
         """
         Initialize and train the model with a list of Fingerprints using the
         specified MLAlgorithm
         """
-        self.method = fingerprints[0].method
+        if method is None:
+            self.method = fingerprints[0].method
+        else:
+            self.method = method
         for fingerprint in fingerprints:
             if fingerprint.method != self.method:
                 raise ValueError("Models can only be trained with one fingerprinting method at a time")
