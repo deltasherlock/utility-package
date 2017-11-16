@@ -3,6 +3,8 @@
 # For Ubuntu/Debian
 # Run this immediately after boot
 export DEBIAN_FRONTEND=noninteractive
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
 
 # Fix any broken packages that may have arisen from a previous reboot
 rm /var/lib/apt/lists/lock
