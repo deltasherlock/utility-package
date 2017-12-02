@@ -7,11 +7,7 @@ export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 
 # Fix any broken packages that may have arisen from a previous reboot
-rm /var/lib/apt/lists/lock
-rm /var/cache/apt/archives/lock
-apt-get update -yq --fix-missing
-dpkg --configure -a
-apt-get install -yq -f
+rm -rf /var/work
 
 cd /root/utility-package/swarm
 
