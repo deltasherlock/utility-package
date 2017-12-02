@@ -2,6 +2,98 @@
 Contains methods to be executed via an RQ queue
 """
 
+def save_tmp_script(script):
+    """
+    Saves the provided string as an executable script in /tmp and returns path
+    """
+    import os
+    from tempfile import NamedTemporaryFile
+    with NamedTemporaryFile(mode='w', delete=False) as tempf:
+        print(script, file=tempf)
+        # Change the temp file to make it executable
+        os.fchmod(tempf.fileno(), stat.S_IRUSR | stat.S_IEXEC)
+        fname = tempf.name
+    return fname
+
+
+def install_uninstall_eventlabel(eventlabel_dict: dict):
+    """
+    Executes the install_script within an EventLabel while recording a changeset.
+    Following this, the uninstall_script is executed (unsupervised)
+
+    :param eventlabel_dict: the EventLabel.__dict__ of the EventLabel to be installed
+    """
+    import os
+    import stat
+    import subprocess
+    from time import time
+    from platform import linux_distribution
+    from deltasherlock.client import networking
+    from deltasherlock.client.ds_watchdog import DeltaSherlockWatchdog
+    from deltasherlock.server.worker import save_tmp_script
+
+    install_log = "----Event " + eventlabel_dict['name'] + " started at " + str(time()) + "----\n"
+    # TODO: make this a setting?
+
+    if linux_distribution()[0] == "Ubuntu":
+        watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/",
+                       "/run/", "/sbin/", "/snap/", "/srv/", "/usr/", "/var/"]
+    else:
+        watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/",
+                       "/run/", "/sbin/", "/srv/", "/usr/", "/var/"]
+
+    # Save the install script to a tmp file
+    fname = save_tmp_script(eventlabel_dict['install_script'])
+
+    # Begin recording by instantiating the watchdog
+    os.sync()
+    dswd = DeltaSherlockWatchdog(watch_paths)
+
+    # Run the command!
+    install_result = subprocess.run(args="bash " + fname,
+                                    shell=True,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+
+    # Now eject the changeset and stop the watchdog
+    os.sync()
+    changeset = dswd.mark()
+    del dswd
+
+    # Delete the tmp file
+    os.remove(fname)
+
+    # Append some information
+    install_log += install_result.stdout.decode("utf-8")
+    install_log += "\n---Event returned code " + \
+        str(install_result.returncode) + " at " + str(time()) + "----"
+
+    # Make sure this install was successful
+    if "E: Could not get lock /" in install_log or "0 upgraded, 0 newly installed, 0 to remove" in install_log or "Error: Nothing to do" in install_log or "already installed and latest version" in install_log:
+        install_log += "\nError detected."
+        networking.swarm_submit_log(install_log, log_type="ER")
+        raise Exception("Installation failed due to unknown error")
+
+    # Add the id of this event label as a regular changeset label
+    changeset.add_label(eventlabel_dict['id'])
+
+    # Now submit the changeset to the API
+    cs_req = networking.swarm_submit_changeset(changeset)
+
+    # Now run the uninstaller
+    fname = save_tmp_script(eventlabel_dict['uninstall_script'])
+    uninstall_result = subprocess.run(args="bash " + fname,
+                                    shell=True,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+
+    # Append some information
+    install_log += uninstall_result.stdout.decode("utf-8")
+    install_log += "\n---Event removal returned code " + \
+        str(uninstall_result.returncode) + " at " + str(time()) + "----"
+
+    # Now submit the swarm member log to the API
+    networking.swarm_submit_log(install_log, cs_req.json()['url'])
 
 def install_eventlabel(eventlabel_dict: dict):
     """
@@ -14,7 +106,7 @@ def install_eventlabel(eventlabel_dict: dict):
     import subprocess
     from time import time
     from platform import linux_distribution
-    from tempfile import NamedTemporaryFile
+    from deltasherlock.server.worker import save_tmp_script
     from deltasherlock.client import networking
     from deltasherlock.client.ds_watchdog import DeltaSherlockWatchdog
 
@@ -28,12 +120,8 @@ def install_eventlabel(eventlabel_dict: dict):
         watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/",
                        "/run/", "/sbin/", "/srv/", "/usr/", "/var/"]
 
-    with NamedTemporaryFile(mode='w', delete=False) as tempf:
-        # Save the install script to a tmp file
-        print(eventlabel_dict['install_script'], file=tempf)
-        # Change the temp file to make it executable
-        os.fchmod(tempf.fileno(), stat.S_IRUSR | stat.S_IEXEC)
-        fname = tempf.name
+    # Save the install script to a tmp file
+    fname = save_tmp_script(eventlabel_dict['install_script'])
 
     # Begin recording by instantiating the watchdog
     os.sync()
@@ -83,17 +171,13 @@ def install_eventlabel_unsupervised(eventlabel_dict: dict):
     import stat
     import subprocess
     from time import time
-    from tempfile import NamedTemporaryFile
+    from deltasherlock.server.worker import save_tmp_script
     from deltasherlock.client import networking
 
     install_log = "----Event " + eventlabel_dict['name'] + " started at " + str(time()) + "----\n"
 
-    with NamedTemporaryFile(mode='w', delete=False) as tempf:
-        # Save the install script to a tmp file
-        print(eventlabel_dict['install_script'], file=tempf)
-        # Change the temp file to make it executable
-        os.fchmod(tempf.fileno(), stat.S_IRUSR | stat.S_IEXEC)
-        fname = tempf.name
+    # Save the install script to a tmp file
+    fname = save_tmp_script(eventlabel_dict['install_script'])
 
     os.sync()
 
