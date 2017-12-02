@@ -7,6 +7,7 @@ def save_tmp_script(script):
     Saves the provided string as an executable script in /tmp and returns path
     """
     import os
+    import stat
     from tempfile import NamedTemporaryFile
     with NamedTemporaryFile(mode='w', delete=False) as tempf:
         print(script, file=tempf)
@@ -24,7 +25,6 @@ def install_uninstall_eventlabel(eventlabel_dict: dict):
     :param eventlabel_dict: the EventLabel.__dict__ of the EventLabel to be installed
     """
     import os
-    import stat
     import subprocess
     from time import time
     from platform import linux_distribution
@@ -102,7 +102,6 @@ def install_eventlabel(eventlabel_dict: dict):
     :param eventlabel_dict: the EventLabel.__dict__ of the EventLabel to be installed
     """
     import os
-    import stat
     import subprocess
     from time import time
     from platform import linux_distribution
@@ -168,7 +167,6 @@ def install_eventlabel_unsupervised(eventlabel_dict: dict):
     :param eventlabel_dict: the EventLabel.__dict__ of the EventLabel to be installed
     """
     import os
-    import stat
     import subprocess
     from time import time
     from deltasherlock.server.worker import save_tmp_script
