@@ -69,8 +69,19 @@ def install_uninstall_eventlabel(eventlabel_dict: dict):
         str(install_result.returncode) + " at " + str(time()) + "----"
 
     # Make sure this install was successful
-    if "E: Could not get lock /" in install_log or "0 upgraded, 0 newly installed, 0 to remove" in install_log or "Error: Nothing to do" in install_log or "already installed and latest version" in install_log:
-        install_log += "\nError detected."
+    if "E: Could not get lock /" in install_log:
+        install_log += "\nError detected. Running uninstaller"
+        # Now run the uninstaller
+        fname = save_tmp_script(eventlabel_dict['uninstall_script'])
+        uninstall_result = subprocess.run(args="bash " + fname,
+                                        shell=True,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT)
+
+        # Append some information
+        install_log += uninstall_result.stdout.decode("utf-8")
+        install_log += "\n---Event removal returned code " + \
+            str(uninstall_result.returncode) + " at " + str(time()) + "----"
         networking.swarm_submit_log(install_log, log_type="ER")
         raise Exception("Installation failed due to unknown error")
 

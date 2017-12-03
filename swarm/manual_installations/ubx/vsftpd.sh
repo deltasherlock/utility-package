@@ -1,12 +1,18 @@
 #!/bin/bash
 # VSFTPd Manual Installation
 
+# Testing Prereq
+sleep $(shuf -i 10-30 -n 1)
+
+# Normal Procedure
 mkdir -p /var/work
 cd /var/work
 tar xzf /mi/vsftpd-3.0.3.tar.gz --strip-components=1
 make
 mkdir -p /usr/local/man/man5
 make install
+
+sleep $(shuf -i 10-30 -n 1)
 
 ## Uninstaller
 # rm -rf /var/work
