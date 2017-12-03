@@ -69,7 +69,7 @@ def install_uninstall_eventlabel(eventlabel_dict: dict):
         str(install_result.returncode) + " at " + str(time()) + "----"
 
     # Make sure this install was successful
-    if "E: Could not get lock /" in install_log:
+    if "E: Could not get lock /" in install_log or "recipe for target 'install' failed" in install_log:
         install_log += "\nError detected. Running uninstaller"
         # Now run the uninstaller
         fname = save_tmp_script(eventlabel_dict['uninstall_script'])
