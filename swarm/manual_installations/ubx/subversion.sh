@@ -13,7 +13,7 @@ tar xzf /mi/subversion-1.9.7.tar.gz --strip-components=1
 tar xzf /mi/sqlite-amalgamation-3071501.tar.gz
 mv sqlite-amalgamation-3071501 sqlite-amalgamation
 ./configure
-make
+make -s
 make install
 
 sleep $(shuf -i 10-30 -n 1)

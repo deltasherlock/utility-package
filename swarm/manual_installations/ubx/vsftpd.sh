@@ -8,7 +8,8 @@ sleep $(shuf -i 10-30 -n 1)
 mkdir -p /var/work
 cd /var/work
 tar xzf /mi/vsftpd-3.0.3.tar.gz --strip-components=1
-make
+sed -i s/-fPIE/-fPIC/ Makefile
+make -s
 mkdir -p /usr/local/man/man5
 make install
 

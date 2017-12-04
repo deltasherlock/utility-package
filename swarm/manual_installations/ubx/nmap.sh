@@ -8,7 +8,7 @@ mkdir -p /var/work
 cd /var/work
 tar xzf /mi/nmap-7.60.tgz --strip-components=1
 ./configure
-make
+make -s
 make install
 
 sleep $(shuf -i 10-30 -n 1)

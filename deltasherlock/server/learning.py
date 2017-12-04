@@ -86,19 +86,23 @@ class MLModel(object):
         y = self.binarizer.fit_transform(self.__labels)
         self.classifier.fit(X, y)
 
-    def predict(self, fingerprint: Fingerprint):
+    def predict(self, fingerprint: Fingerprint, override_quantity = None):
         prediction = None
 
         # get the class probabilities
         probabilities = self.classifier.predict_proba(
             fingerprint.reshape(1, -1))
 
+        qty = 0
+        if override_quantity is None:
+            qty = fingerprint.predicted_quantity
+        else:
+            qty = override_quantity
         # Prevent wild quantity predictions from breaking everything
         # TODO Don't hardcode 50
-        if fingerprint.predicted_quantity > 0 and fingerprint.predicted_quantity <= 50:
+        if qty > 0 and qty <= 50:
             # get top n class probabilities
-            topNClasses = np.argpartition(probabilities[
-                                          0], -fingerprint.predicted_quantity)[-fingerprint.predicted_quantity:]
+            topNClasses = np.argpartition(probabilities[0], -qty)[-qty:]
 
             # create a sparse array of 1's and 0's marking the label indices
             prediction = np.zeros((1, self.classifier.classes_.shape[0]))
