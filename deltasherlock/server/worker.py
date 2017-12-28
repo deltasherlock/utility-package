@@ -229,7 +229,7 @@ def update_permissions_dict():
     from stat import ST_MODE
     watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/", "/run/", "/sbin/", "/snap/", "/srv/", "/usr/", "/var/"]
 
-    permissions = shelve.open("/root/permissions.p")
+    permissions = shelve.open("/home/ubuntu/permissions_shelf.p")
 
     for root_path in watch_paths:
         for root, dirs, files in os.walk(root_path):
