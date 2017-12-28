@@ -223,6 +223,29 @@ def install_eventlabel_unsupervised(eventlabel_dict: dict):
         pass
 
 
+def update_permissions_dict():
+    import os
+    import shelve
+    from stat import *
+    watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/", "/run/", "/sbin/", "/snap/", "/srv/", "/usr/", "/var/"]
+
+    permissions = shelve.open("/root/permissions.p")
+
+    for root_path in watch_paths:
+        for root, dirs, files in os.walk(root_path):
+            for name in files:
+                full_path = os.path.join(root, name)
+                try:
+                    perm = int(oct(os.stat(full_path)[ST_MODE])[-3:])
+                    permissions[full_path] = perm
+                    print(full_path+ ": " + str(perm))
+                except:
+                    print(full_path + ": error")
+                    permissions[full_path] = 0
+
+    permissions.close()
+
+
 def process_fingerprint(fingerprint_json_str: str, endpoint_url: str, client_ip: str, parameters: dict, django_params: dict = None) -> list:
     """
     Accepts fingerprints from the API and produces a prediction

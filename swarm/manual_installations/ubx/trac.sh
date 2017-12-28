@@ -11,7 +11,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y python-dev mysql-server libmys
 mkdir -p /var/work
 cd /var/work
 virtualenv trac
-source /var/work/trac/bin/activate
+source /usr/work/trac/bin/activate
 pip install genshi mysql-python
 
 # Training: Activate python virtual environment
