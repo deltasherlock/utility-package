@@ -226,7 +226,7 @@ def install_eventlabel_unsupervised(eventlabel_dict: dict):
 def update_permissions_dict():
     import os
     import shelve
-    from stat import *
+    from stat import ST_MODE
     watch_paths = ["/bin/", "/boot/", "/etc/", "/lib/", "/lib64/", "/opt/", "/run/", "/sbin/", "/snap/", "/srv/", "/usr/", "/var/"]
 
     permissions = shelve.open("/root/permissions.p")
