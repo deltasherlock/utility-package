@@ -28,7 +28,7 @@ class SentencesFromFile(object):
             yield line.split()
 
 class SentencesFromDict(object):
-    """Create an iterable object from a dictionary-like object that has a """
+    """Create an iterable object from a dictionary-like object, like a shelf"""
 
     def __init__(self, dictionary):
         self.dictionary = dictionary
@@ -37,6 +37,18 @@ class SentencesFromDict(object):
         for key, value in self.dictionary.items():
             for sentence in value:
                 yield sentence
+
+class SentencesFromDicts(object):
+    """Create an iterable object from several dictionary-like objects"""
+    
+    def __init__(self, *args):
+        self.dictionaries = args
+
+    def __iter__(self):
+        for dictionary in self.dictionaries:
+            for key, value in dictionary.items():
+                for sentence in value:
+                    yield sentence
 
 
 def create_dictionary(sentences, threads=4):
