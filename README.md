@@ -15,6 +15,8 @@ This repository contains the DeltaSherlock **utility package**. If you're lookin
 * watchdog
 * numpy & scipy
 * sklearn
+* gensim
+* google_compute_engine?
 
 ## Installation
 _Assuming Ubuntu 14.04 or later. You may have to tweak these commands slightly if you're running some other Linux distro_
