@@ -271,6 +271,42 @@ class Changeset(object):
         self.labels.append(label)
         return
 
+    def filter_to_unique(self, rules: dict, label_names: list=None):
+        """
+        Filter this changeset to only its unique files (according to rule-
+        based method output). If label_names is provided, use that to determine
+        which labels to include, otherwise just use the internal labels field.
+        """
+
+        # Allow user to specify alternate label names, just in case our internal
+        # label field has been set to database IDs instead of real names
+        if label_names is None:
+            label_names = self.labels
+
+        # Determine unique files for all labels
+        unique_files = []
+        for label in label_names:
+            for rule_sublist in rules:
+                unique_files.append(rule_sublist[0][0][4:])
+
+        # Do the actual filtering
+        new_creations, new_modifications, new_deletions = []
+        for record in self.creations:
+            if record.filename in unique_files:
+                new_creations.append(record)
+        for record in self.modifications:
+            if record.filename in unique_files:
+                new_modifications.append(record)
+        for record in self.deletions:
+            if record.filename in unique_files:
+                new_deletions.append(record)
+
+        # Replace old lists
+        self.creations = new_creations
+        self.modifications = new_modifications
+        self.deletions = new_deletions
+
+
     def __predict_quantity(self) -> int:
         """
         Uses histogram analysis to make an educated guess as to how many
