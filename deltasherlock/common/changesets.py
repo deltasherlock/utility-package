@@ -290,7 +290,7 @@ class Changeset(object):
                 unique_files.append(rule_sublist[0][0][4:])
 
         # Do the actual filtering
-        new_creations, new_modifications, new_deletions = [], [], []
+        new_creations, new_modifications, new_deletions = [], [], []
         for record in self.creations:
             if record.filename in unique_files:
                 new_creations.append(record)
