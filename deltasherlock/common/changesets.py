@@ -286,11 +286,11 @@ class Changeset(object):
         # Determine unique files for all labels
         unique_files = []
         for label in label_names:
-            for rule_sublist in rules:
+            for rule_sublist in rules[label]:
                 unique_files.append(rule_sublist[0][0][4:])
 
         # Do the actual filtering
-        new_creations, new_modifications, new_deletions = []
+        new_creations, new_modifications, new_deletions = [], [], []
         for record in self.creations:
             if record.filename in unique_files:
                 new_creations.append(record)
